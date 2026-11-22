@@ -1,0 +1,111 @@
+# Catálogo de fontes do observatório.
+# status: implementado | planejado | depende_de_decisao
+# repositorio: publico (fontes abertas) | privado (raspagem, dados sob sigilo)
+# rits: eixo da matriz de sustentabilidade da RITS-SP que a fonte alimenta
+
+fontes:
+  - id: ibge
+    nome: IBGE - municípios e população
+    status: implementado
+    frequencia: anual
+    eixo: base
+    repositorio: publico
+
+  - id: cadastur
+    nome: Cadastur - prestadores de serviços turísticos (MTur)
+    status: implementado
+    frequencia: trimestral
+    eixo: [hospedagem, servicos, eventos, atrativos]
+    rits: economico
+    repositorio: publico
+
+  - id: siconfi
+    nome: Siconfi - despesas por função e subfunção (DCA Anexo I-E)
+    status: implementado
+    frequencia: anual
+    eixo: despesas
+    repositorio: publico
+
+  - id: caged
+    nome: Novo CAGED - emprego nas atividades características do turismo
+    status: planejado
+    frequencia: mensal
+    eixo: empregos
+    rits: economico
+    observacao: usar a lista oficial de 59 subclasses CNAE (MTur/IBGE/IPEA, RIET 2008)
+    repositorio: publico
+
+  - id: anac
+    nome: ANAC - chegadas de passageiros em aeroportos
+    status: planejado
+    frequencia: mensal
+    eixo: mobilidade
+    rits: economico
+    repositorio: publico
+
+  - id: antt
+    nome: ANTT - ônibus de fretamento eventual e turístico
+    status: planejado
+    frequencia: mensal
+    eixo: mobilidade
+    rits: economico
+    repositorio: publico
+
+  - id: cetesb
+    nome: CETESB - resíduos, aterros e qualidade das águas
+    status: planejado
+    frequencia: anual
+    eixo: sustentabilidade
+    rits: ambiental
+    repositorio: publico
+
+  - id: alesp
+    nome: Alesp - proposituras sobre turismo e leis de classificação de MIT
+    status: planejado
+    frequencia: mensal
+    eixo: governanca
+    repositorio: publico
+
+  - id: planos_diretores
+    nome: Planos diretores de turismo, atas do COMTUR e inventários (Alesp, diários oficiais, prefeituras)
+    status: planejado
+    frequencia: trimestral
+    eixo: governanca
+    rits: governanca
+    repositorio: publico
+
+  - id: producoes
+    nome: Notícias e produção acadêmica por município (Google News, OpenAlex)
+    status: planejado
+    frequencia: mensal
+    eixo: producoes
+    repositorio: publico
+
+  - id: google_places
+    nome: Google Places API - pareamento com o Cadastur, nota e número de avaliações
+    status: planejado
+    frequencia: trimestral
+    eixo: [hospedagem, atrativos]
+    repositorio: publico
+    observacao: só o place_id pode ser guardado sem prazo; o restante é reconsultado a cada ciclo
+
+  - id: tripadvisor
+    nome: TripAdvisor Content API - inventário de atrativos
+    status: planejado
+    frequencia: trimestral
+    eixo: atrativos
+    repositorio: publico
+
+  - id: precos_hospedagem
+    nome: Airbnb e Booking via Apify - preço anunciado e oferta
+    status: depende_de_decisao
+    frequencia: mensal
+    eixo: hospedagem
+    repositorio: privado
+
+  - id: redes_oficiais
+    nome: Perfis oficiais dos municípios nas redes (Apify)
+    status: depende_de_decisao
+    frequencia: mensal
+    eixo: midias
+    repositorio: privado

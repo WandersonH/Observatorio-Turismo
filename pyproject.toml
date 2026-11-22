@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "observatorio-turismo"
+version = "0.1.0"
+description = "Coleta contínua de dados do Observatório de Turismo da AMITESP (EACH-USP)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=2.1",
+    "pyarrow>=15",
+    "openpyxl>=3.1",
+    "pyyaml>=6",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+bigquery = ["google-cloud-bigquery>=3.17", "db-dtypes>=1.2"]
+dev = ["pytest>=8"]
+
+[project.scripts]
+observatorio = "observatorio.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

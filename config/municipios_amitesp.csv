@@ -1,0 +1,102 @@
+id_formulario,municipio,regiao_turistica,regiao_administrativa
+2,Agudos,Coração Paulista,Bauru
+58,Araraquara,Centro Paulista,Central
+108,Araçatuba,Tietê Vivo,Araçatuba
+69,Arealva,Caminhos do Tietê,Bauru
+109,Barra do Turvo,Cavernas da Mata Atlântica,Registro
+1,Bocaina,Caminhos do Tietê,Bauru
+24,Bofete,Cuesta Paulista,Sorocaba
+8,Boituva,Raízes do Interior Paulista,Sorocaba
+113,Bom Jesus dos Perdões,Entre Serras e Águas,Campinas
+75,Borborema,Caminhso do Tietê,Central
+70,Buritama,Tietê Vivo,Araçatuba
+20,Campina do Monte Alegre,Veredas da Mata Atlântica,Itapeva
+90,Casa Branca,"Entre Rios, Serras e Cafés",Campinas
+98,Castilho,Pantanal Paulista,Araçatuba
+16,Caçapava,Rios do Vale,São José dos Campos
+52,Cerquilho,Raízes do Interior Paulista,Sorocaba
+53,Charqueada,Serra do Itaqueri,Campinas
+50,Colina,Águas Sertanejas,Barretos
+103,Cosmópolis,Sem informação,Campinas
+31,Divinolândia,"Entre Rios, Serras e Cafés",Campinas
+26,Dois Córregos,Caminhos do Tietê,Bauru
+12,Dracena,Sem informação,Presidente Prudente
+47,Dumont,Raízes do Campo,Ribeirão Preto
+101,Estiva Gerbi,Trilhos e Trilhas da Baixa Mogiana,Campinas
+5,Fernandópolis,Maravilhas do Rio Grande,São José dos Campos
+33,Guararema,Nascentes do Tietê,RM de São Paulo
+99,Gália,Alto Cafezal,Marília
+77,Iacanga,Caminhos do Tietê,Bauru
+43,Ibirarema,Circuito das Nações,Marília
+110,Indiaporã,Maravilhas do Rio Grande,São José do Rio Preto
+65,Ipeúna,Serra do Itaqueri,Campinas
+46,Iporanga,Carvernas da Mata Atlântica,Itapeva
+71,Itapecerica da Serra,"Mananciais, Aventura, Artes e Negócios",RM de São Paulo
+76,Itapeva,Cânions Paulista,Itapeva
+18,Itapira,Trilhos e Trilhas da Baixa Mogiana,Campinas
+86,Itaporanga,Angra Paulista,Itapeva
+100,Itapura,Pantanal Paulista,Araçatuba
+80,Itararé,Cânions Paulista,Itapeva
+57,Itariri,Sem informação,Registro
+22,Itatiba,Circuito das Frutas,Campinas
+51,Itaóca,Cavernas da Mata Atlântica,Itapeva
+73,Itupeva,Circuito das Frutas,Campinas
+45,Ituverava,Sem informação,Franca
+81,Itápolis,Sem informação,Central
+97,Jacareí,Rios do Vale,São José dos Campos
+89,Jaguariúna,Circuito das Águas Paulista,Campinas
+9,Jarinu,Circuito das Frutas,Campinas
+37,Jaú,Caminhos do Tietê,Bauru
+40,Jundiaí,Circuito das Frutas,Campinas
+68,Juquiá,Caminhos da Mata Altântica,Registro
+64,Laranjal Paulista,Raízes do Interior Paulista,Sorocaba
+88,Lins,Coração do Tietê,Bauru
+27,Louveira,Circuito das Frutas,Campinas
+96,Mairiporã,Entre Serras e Águas,RM de São Paulo
+72,Marília,Alto Cafezal,Marília
+111,Mesópolis,Entre Rios,São José do Rio Preto
+13,Mineiros do Tietê,Caminhos do Tietê,Bauru
+23,Mira Estrela,Maravilhas do Rio Grande,São José do Rio Preto
+112,Miracatu,Sem informação,Registro
+93,Mogi Guaçu,Trilhos e Trilhas da Baixa Mogiana,Campinas
+30,Mogi das Cruzes,Nascentes do Tietê,RM de São Paulo
+102,Monte Alto,Raízes do Campo,Ribeirão Preto
+106,Monteiro Lobato,Mantiqueira Paulista,Araçatuba
+10,Nazaré Paulista,Entre Serras e Água,Campinas
+11,Novo Horizonte,"Águas, Sabores e Saberes",São José do Rio Preto
+83,Palmeira d'Oeste,Entre Rios,São José do Rio Preto
+66,Panorama,Sol do Oeste,Presidente Prudente
+36,Pardinho,Cuesta Paulista,Sorocaba
+107,Paulicéia,Sol do Oeste,Presidente Prudente
+91,Pedra Bela,Entre Serras e Águas,Campinas
+19,Pedreira,Circuito das Águas Paulista,Campinas
+79,Pedrinhas Paulista,Circuito das Nações,Marília
+49,Piedade,Veredas da Mata Atlântica,Sorocaba
+21,Pinhalzinho,Entre Serras e Águas,Campinas
+48,Piracaia,Entre Serras e Águas,Campinas
+4,Pirassununga,Encantos da Anhanguera Central,Campinas
+84,Pongaí,Coração do Tietê,Bauru
+55,Porto Ferreira,Encantos da Anhanguera Central,Central
+82,Rubinéia,Entre Rios,São José do Rio Preto
+59,Sabino,Coração do Tietê,Bauru
+85,Santa Clara d´Oeste,Entre Rios,São José do Rio Preto
+104,Santa Cruz do Rio Pardo,Angra Paulista,Marília
+35,Santa Isabel,Nascentes do Tietê,RM de São Paulo
+54,Santo Antônio da Alegria,Alta Mogiana,Ribeirão Preto
+60,Santo Antônio do Aracanguá,Tietê Vivo,Araçatuba
+15,Santo Expedito,Sol do Oeste,Presidente Prudente
+25,Sertãozinho,Raízes do Campo,Ribeirão Preto
+94,Sud Mennucci,Pantanal Paulista,Araçatuba
+3,São José dos Campos,Mantiqueira Paulista,São José dos Campos
+42,São João da Boa Vista,"Entre Rios, Serras e Cafés",Campinas
+62,São Manuel,Cuesta Paulista,Sorocaba
+28,São Simão,Alta Mogiana,Ribeirão Preto
+39,Tambaú,Encantos da Anhanguera Central,Campinas
+17,Tapiraí,Caminhos da Mata Altântica,Sorocaba
+92,Tatuí,Raízes do Interior Paulista,Sorocaba
+32,Torrinha,Serra do Itaqui,Campinas
+41,Três Fronteiras,Entre Rios,São José do Rio Preto
+56,Tuiuti,Entre Serras e Águas,Campinas
+63,Valinhos,Circuito das Frutas,Campinas
+105,Vargem,Entre Serras e Águas,Campinas
+29,Votuporanga,Maravilhas do Rio Grande,São José do Rio Preto

@@ -1,0 +1,22 @@
+# Dados nunca entram no Git: ficam no BigQuery ou nos artefatos do Actions
+data/
+*.parquet
+*.xlsx
+*.xls
+*.csv
+!config/*.csv
+!tests/fixtures/*.csv
+
+# Credenciais
+.env
+*.json
+!config/*.json
+credenciais/
+
+# Python
+__pycache__/
+*.egg-info/
+.venv/
+.pytest_cache/
+build/
+dist/
