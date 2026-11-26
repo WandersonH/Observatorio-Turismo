@@ -21,6 +21,7 @@ from .coletores.siconfi import anos_padrao
 log = logging.getLogger(__name__)
 
 RODOU = "rodou"
+PARCIAL = "parcial"
 FALHOU = "falhou"
 NAO_IMPLEMENTADO = "nao_implementado"
 AGUARDA_DECISAO = "aguarda_decisao"
@@ -65,8 +66,10 @@ def rodar_tudo(fontes: list[str] | None = None) -> dict:
         try:
             parametros = PARAMETROS.get(fonte_id, dict)()
             resultado = COLETORES[fonte_id]().executar(**parametros)
-            info["situacao"] = RODOU
+            info["situacao"] = PARCIAL if resultado.avisos else RODOU
             info["coberturas"] = [{**asdict(c), "taxa": c.taxa} for c in resultado.coberturas]
+            if resultado.avisos:
+                info["avisos"] = resultado.avisos
         except FaltaCredencial as erro:
             log.warning("%s: %s", fonte_id, erro)
             info["situacao"] = FALTA_CREDENCIAL
@@ -96,7 +99,7 @@ def consolidar_status() -> dict:
         conteudo = json.loads(arquivo.read_text(encoding="utf-8"))
         datas.append(conteudo.get("data_coleta"))
         for f in conteudo.get("fontes", []):
-            if f["id"] not in executadas or f.get("situacao") in (RODOU, FALHOU, FALTA_CREDENCIAL):
+            if f["id"] not in executadas or f.get("situacao") in (RODOU, PARCIAL, FALHOU, FALTA_CREDENCIAL):
                 executadas[f["id"]] = f
     fontes = []
     for info in catalogo_fontes():
@@ -105,7 +108,7 @@ def consolidar_status() -> dict:
 
 
 def resumo(status: dict) -> str:
-    rotulos = {RODOU: "rodou", FALHOU: "FALHOU", NAO_IMPLEMENTADO: "não implementado", AGUARDA_DECISAO: "aguarda decisão",
+    rotulos = {RODOU: "rodou", PARCIAL: "rodou em parte", FALHOU: "FALHOU", NAO_IMPLEMENTADO: "não implementado", AGUARDA_DECISAO: "aguarda decisão",
                FALTA_CREDENCIAL: "falta credencial", NAO_EXECUTADO: "não executado"}
     linhas = [f"Rodada de {status['data_coleta']}", ""]
     for f in status["fontes"]:
@@ -115,5 +118,7 @@ def resumo(status: dict) -> str:
         for c in f.get("coberturas", []):
             taxa = f" ({c['taxa']:.1%})" if c.get("taxa") is not None else ""
             linha += f"\n    {c['tabela']}: {c['amostra']} de {c['universo']} {c['unidade']}{taxa}"
+        for aviso in f.get("avisos", []):
+            linha += f"\n    não veio: {aviso}"
         linhas.append(linha)
     return "\n".join(linhas)

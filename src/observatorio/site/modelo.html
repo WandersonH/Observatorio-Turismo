@@ -72,6 +72,7 @@ tr:hover td{background:#FCFAF5}
 .selo-base.ouro{background:var(--ouro);color:#fff}
 .situacao{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;white-space:nowrap}
 .s-rodou{background:#E3F0E5;color:var(--verde)}
+.s-parcial{background:#FFF1D1;color:#8A6400}
 .s-falhou{background:#FBE4DF;color:var(--vermelho)}
 .s-nao_implementado{background:#EFECE6;color:#7A7066}
 .s-aguarda_decisao{background:#FFF1D1;color:#8A6400}
@@ -118,7 +119,7 @@ const moeda = v => v == null ? '–' : new Intl.NumberFormat('pt-BR', {style: 'c
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const app = document.getElementById('app');
 const dica = document.getElementById('dica');
-const SITUACAO = {rodou: 'Rodou', falhou: 'Falhou', nao_implementado: 'Não implementado',
+const SITUACAO = {rodou: 'Rodou', parcial: 'Rodou em parte', falhou: 'Falhou', nao_implementado: 'Não implementado',
                   aguarda_decisao: 'Aguarda decisão do convênio', nao_executado: 'Não executado',
                   falta_credencial: 'Falta credencial'};
 const CORES = ['--c1', '--c2', '--c3', '--c4', '--c5'].map(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim());
@@ -154,7 +155,7 @@ function fmtInd(id, v) {
   if (id === 'emp_saldo') return (v > 0 ? '+' : '') + nf(v, 0);
   return nf(v, indicador(id).casas ?? 1);
 }
-function pendentes() { return (E.status?.fontes || []).filter(f => f.situacao !== 'rodou'); }
+function pendentes() { return (E.status?.fontes || []).filter(f => !['rodou', 'parcial'].includes(f.situacao)); }
 
 function rotear() {
   // rotas em #nome simples (ex.: #fontes, #municipio-3550308); aceita também o formato antigo #/municipio/3550308
@@ -231,7 +232,7 @@ function opcoesIndicador() {
 function paginaInicio() {
   const base = E.munis.filter(m => m.na_base_amitesp);
   const destaques = [...base].sort((a, b) => (b.hosp || 0) - (a.hosp || 0)).slice(0, 5);
-  const rodou = (E.status?.fontes || []).filter(f => f.situacao === 'rodou').length;
+  const rodou = (E.status?.fontes || []).filter(f => ['rodou', 'parcial'].includes(f.situacao)).length;
   const total = (E.status?.fontes || []).length;
   const cadastur = E.munis.reduce((s, m) => s + (m.cadastur_total || 0), 0);
   app.innerHTML = `
@@ -342,6 +343,8 @@ async function paginaMunicipio(cod) {
       <div>
         <h1>${esc(m.municipio)}</h1>
         <div>${m.na_base_amitesp ? '<span class="selo-base ouro">Base AMITESP</span>' : '<span class="selo-base">Fora da base AMITESP</span>'}
+          ${m.categoria_turistica ? `<span class="selo-base ouro">${esc(m.categoria_turistica)} · ${nf(m.posicao_ranking)}º de ${nf(m.total_categoria)} no ranking</span>`
+            : E.meta.alesp_fonte_legal ? '<span class="selo-base">Não classificado como município turístico</span>' : ''}
           ${m.regiao_turistica ? `<span class="selo-base">Região turística: ${esc(m.regiao_turistica)}</span>` : ''}
           ${m.regiao_imediata ? `<span class="selo-base">Região imediata: ${esc(m.regiao_imediata)}</span>` : ''}</div>
         <div class="kpis">
@@ -434,6 +437,7 @@ function paginaFontes() {
     <p class="sub">O que rodou na última coleta (${dataBR(E.status?.data_coleta)}), com universo e amostra lida, e o que ainda não roda.</p>
     <div class="kpis">
       <div class="kpi"><div class="v">${conta('rodou')}</div><div class="r"><span class="situacao s-rodou">Rodou</span></div></div>
+      <div class="kpi"><div class="v">${conta('parcial')}</div><div class="r"><span class="situacao s-parcial">Rodou em parte</span></div></div>
       <div class="kpi"><div class="v">${conta('falhou')}</div><div class="r"><span class="situacao s-falhou">Falhou</span></div></div>
       <div class="kpi"><div class="v">${conta('nao_implementado')}</div><div class="r"><span class="situacao s-nao_implementado">Não implementado</span></div></div>
       <div class="kpi"><div class="v">${conta('falta_credencial')}</div><div class="r"><span class="situacao s-falta_credencial">Falta credencial</span></div></div>
@@ -444,7 +448,7 @@ function paginaFontes() {
       <td><span class="situacao s-${f.situacao}">${SITUACAO[f.situacao] || f.situacao}</span>${f.duracao_s ? `<div class="nota">${nf(f.duracao_s)} s</div>` : ''}</td>
       <td>${esc(f.frequencia || '')}</td>
       <td>${['falhou', 'falta_credencial'].includes(f.situacao) ? `<span class="nota" style="color:${f.situacao === 'falhou' ? 'var(--vermelho)' : '#2F4F86'}">${esc(f.erro)}</span>`
-        : (f.coberturas || []).map(c => `<div><b>${nf(c.amostra)}</b> de ${nf(c.universo)} ${esc(c.unidade)}${c.taxa != null ? ` (${nf(c.taxa * 100, 1)}%)` : ''}${c.municipios_esperados ? ` · ${nf(c.municipios_com_dado)}/${nf(c.municipios_esperados)} municípios da base` : ''} <span class="nota">${esc(c.tabela)}</span></div>`).join('') || `<span class="nota">${esc(f.observacao || '')}</span>`}</td></tr>`).join('')}
+        : (f.avisos || []).map(a => `<div class="nota" style="color:#8A6400">Não veio: ${esc(a)}</div>`).join('') + (f.coberturas || []).map(c => `<div><b>${nf(c.amostra)}</b> de ${nf(c.universo)} ${esc(c.unidade)}${c.taxa != null ? ` (${nf(c.taxa * 100, 1)}%)` : ''}${c.municipios_esperados ? ` · ${nf(c.municipios_com_dado)}/${nf(c.municipios_esperados)} municípios da base` : ''} <span class="nota">${esc(c.tabela)}</span></div>`).join('') || `<span class="nota">${esc(f.observacao || '')}</span>`}</td></tr>`).join('')}
     </tbody></table></div>`;
 }
 

@@ -1,15 +1,19 @@
-"""Alesp: proposituras sobre turismo e leis estaduais que citam municípios turísticos.
+"""Alesp: classificação oficial dos municípios turísticos e proposituras sobre turismo.
 
-Lê os arquivos do Portal de Dados Abertos da Alesp (proposituras e normas, em XML compactado),
-fica com os registros cuja ementa fala de turismo, estância turística ou município de interesse
-turístico, e acha na ementa os municípios de SP citados.
-
-O formato dos registros é lido de forma genérica (cada filho direto da raiz é um registro e seus
-filhos são os campos), para não quebrar se a Alesp acrescentar campos.
+1. Classificação (sempre): o texto compilado da Lei nº 17.469/2021, que consolida a legislação
+   que classifica os municípios turísticos, publicado no repositório de legislação da Alesp.
+   O Anexo I traz as Estâncias Turísticas e o Anexo II os Municípios de Interesse Turístico,
+   cada um na ordem do ranqueamento trienal (LC 1.261/2015, art. 5º, § 2º). Trechos riscados
+   no texto compilado (revogados) são descartados.
+2. Proposituras e normas (quando o portal responde): os arquivos do Portal de Dados Abertos,
+   filtrados pela ementa (turismo, estância, interesse turístico), com os municípios citados.
+   Esse portal responde 503 a acessos automatizados vindos de servidores de nuvem; quando isso
+   acontece, a fonte roda em parte e o aviso aparece na página de fontes.
 """
 
 from __future__ import annotations
 
+import html
 import io
 import logging
 import re
@@ -19,18 +23,44 @@ import zipfile
 import pandas as pd
 
 from ..cobertura import Cobertura
-from ..normalizacao import LocalizadorMunicipios, nome_coluna, texto_simples
+from ..normalizacao import LocalizadorMunicipios, chave_municipio, nome_coluna, texto_simples
 from .base import Coletor, Resultado
 from .ibge import cadastro_mestre
 
 log = logging.getLogger(__name__)
 
+LEI_CONSOLIDADA = ("https://www.al.sp.gov.br/repositorio/legislacao/lei/2021/"
+                   "compilacao-lei-17469-13.12.2021.html")
 ARQUIVOS = {
     "proposituras": "https://www.al.sp.gov.br/repositorioDados/processo_legislativo/proposituras.zip",
     "normas": "https://www.al.sp.gov.br/repositorioDados/legislacao/legislacao_normas.zip",
 }
+ANEXOS = {"I": "Estância Turística", "II": "Município de Interesse Turístico"}
 TEMA = re.compile(r"\bturis|\bestancia|interesse turistico")
 MIT = re.compile(r"municipio de interesse turistico")
+
+
+def _texto(fragmento: str) -> str:
+    return html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", fragmento))).strip()
+
+
+def ler_classificacao(pagina: str) -> tuple[pd.DataFrame, str | None]:
+    """Tabelas dos Anexos I e II do texto compilado -> (categoria, posição, município); e a última atualização."""
+    vigente = re.sub(r"<s>.*?</s>", " ", pagina, flags=re.S | re.I)  # riscado = revogado
+    atualizacao = re.search(r"[ÚU]ltima atualiza[çc][ãa]o:\s*([^)]+)\)", _texto(vigente[:20000]))
+    linhas = []
+    marcas = list(re.finditer(r"ANEXO\s+(II|I)\b", vigente))
+    for i, marca in enumerate(marcas):
+        fim = marcas[i + 1].start() if i + 1 < len(marcas) else len(vigente)
+        tabela = re.search(r"<table.*?</table>", vigente[marca.start():fim], re.S | re.I)
+        if not tabela:
+            continue
+        for tr in re.findall(r"<tr[^>]*>(.*?)</tr>", tabela.group(0), re.S | re.I):
+            celulas = [_texto(td) for td in re.findall(r"<td[^>]*>(.*?)</td>", tr, re.S | re.I)]
+            if len(celulas) >= 2 and re.fullmatch(r"\d+\.?", celulas[0]):
+                linhas.append({"categoria_turistica": ANEXOS[marca.group(1)],
+                               "posicao_ranking": int(celulas[0].rstrip(".")), "municipio_lei": celulas[1]})
+    return pd.DataFrame(linhas), (atualizacao.group(1).strip() if atualizacao else None)
 
 
 def registros(conteudo_xml: bytes):
@@ -61,23 +91,41 @@ def campo(registro: dict, *trechos: str) -> str:
 
 class ColetorAlesp(Coletor):
     fonte = "alesp"
-    descricao = "Proposituras e normas da Alesp sobre turismo, por município citado"
+    descricao = "Classificação oficial de estâncias e MITs (ranking) e proposituras da Alesp sobre turismo"
 
-    def _baixar(self, url: str) -> bytes:
+    def _baixar_zip(self, url: str) -> bytes:
         resposta = self.sessao.get(url, timeout=600)
         if resposta.status_code == 503:
-            raise RuntimeError(f"o Portal de Dados Abertos da Alesp respondeu 503 ao acesso automatizado ({url})")
+            raise ConnectionRefusedError("o Portal de Dados Abertos da Alesp respondeu 503 ao acesso automatizado")
         resposta.raise_for_status()
         with zipfile.ZipFile(io.BytesIO(resposta.content)) as z:
             return z.read(z.namelist()[0])
 
-    def coletar(self, **_) -> Resultado:
-        cadastro = cadastro_mestre()
-        localizador = LocalizadorMunicipios(dict(zip(cadastro["codigo_ibge"], cadastro["municipio"])))
-        brutos, ligacoes, totais = {}, [], {}
+    def classificacao(self, mapa: dict[str, str]) -> tuple[pd.DataFrame, Cobertura]:
+        resposta = self.get(LEI_CONSOLIDADA, timeout=120)
+        pagina = resposta.content.decode(resposta.apparent_encoding or "latin-1", errors="replace")
+        tabela, atualizacao = ler_classificacao(pagina)
+        if tabela.empty:
+            raise RuntimeError("anexos de classificação não encontrados no texto compilado da Lei 17.469/2021")
+        tabela["codigo_ibge"] = tabela["municipio_lei"].map(lambda n: mapa.get(chave_municipio(n)))
+        tabela["total_categoria"] = tabela.groupby("categoria_turistica")["posicao_ranking"].transform("count")
+        tabela["fonte_legal"] = f"Lei 17.469/2021, texto compilado (última atualização: {atualizacao or 'n/d'})"
+        sem_par = tabela["codigo_ibge"].isna()
+        contagem = tabela["categoria_turistica"].value_counts().to_dict()
+        cobertura = Cobertura(
+            fonte=self.fonte, tabela="classificacao", universo=len(tabela), amostra=int((~sem_par).sum()),
+            unidade="municípios turísticos da lei ligados ao IBGE",
+            notas=[f"última atualização: {atualizacao}", f"por categoria: {contagem}",
+                   f"sem par no IBGE: {', '.join(tabela.loc[sem_par, 'municipio_lei'])}" if sem_par.any()
+                   else "todos com par"],
+        )
+        return tabela, cobertura
+
+    def proposituras(self, localizador: LocalizadorMunicipios) -> tuple[dict, pd.DataFrame, list[Cobertura]]:
+        brutos, ligacoes, coberturas = {}, [], []
         for tipo, url in ARQUIVOS.items():
             linhas, total = [], 0
-            for reg in registros(self._baixar(url)):
+            for reg in registros(self._baixar_zip(url)):
                 total += 1
                 ementa = campo(reg, "ementa")
                 simples = texto_simples(ementa)
@@ -91,24 +139,32 @@ class ColetorAlesp(Coletor):
                                      "ano": campo(reg, "ano")[:4], "id": campo(reg, "iddocumento", "idnorma", "id"),
                                      "ementa": ementa})
             brutos[tipo] = pd.DataFrame(linhas)
-            totais[tipo] = (total, len(linhas))
-            log.info("Alesp %s: %d registros, %d sobre turismo", tipo, total, len(linhas))
+            coberturas.append(Cobertura(fonte=self.fonte, tabela=tipo, universo=total, amostra=len(linhas),
+                                        unidade=f"{tipo} sobre turismo no arquivo completo",
+                                        notas=["filtro na ementa: turis*, estância, interesse turístico"]))
+        return brutos, pd.DataFrame(ligacoes), coberturas
 
-        lig = pd.DataFrame(ligacoes)
-        if len(lig):
-            tratado = lig.pivot_table(index="codigo_ibge", columns="tipo", values="id", aggfunc="nunique",
-                                      fill_value=0).add_prefix("alesp_").reset_index()
-            mit = lig[lig["classifica_mit"]].groupby("codigo_ibge")["ano"].max().rename("ultima_lei_mit_ano")
-            tratado = tratado.merge(mit, on="codigo_ibge", how="left")
-        else:
-            tratado = pd.DataFrame(columns=["codigo_ibge"])
+    def coletar(self, **_) -> Resultado:
+        cadastro = cadastro_mestre()
+        mapa = dict(zip(cadastro["municipio"].map(chave_municipio), cadastro["codigo_ibge"]))
+        classificacao, cob_classificacao = self.classificacao(mapa)
         base = set(cadastro.loc[cadastro["na_base_amitesp"].astype(bool), "codigo_ibge"])
-        coberturas = [Cobertura(
-            fonte=self.fonte, tabela=tipo, universo=total, amostra=sobre_turismo,
-            unidade=f"{tipo} sobre turismo no arquivo completo",
-            municipios_com_dado=len(set(lig.loc[lig["tipo"] == tipo, "codigo_ibge"]) & base) if len(lig) else 0,
-            municipios_esperados=len(base),
-            notas=["filtro na ementa: turis*, estância, interesse turístico"],
-        ) for tipo, (total, sobre_turismo) in totais.items()]
-        return Resultado(tabelas={**brutos, "citacoes": lig}, tratadas={"alesp_municipio": tratado},
-                         coberturas=coberturas)
+        cob_classificacao.municipios_com_dado = len(set(classificacao["codigo_ibge"].dropna()) & base)
+        cob_classificacao.municipios_esperados = len(base)
+
+        tratado = classificacao.dropna(subset=["codigo_ibge"])[
+            ["codigo_ibge", "categoria_turistica", "posicao_ranking", "total_categoria", "fonte_legal"]]
+        tabelas, coberturas, avisos = {"classificacao": classificacao}, [cob_classificacao], []
+        try:
+            brutos, lig, cob_prop = self.proposituras(
+                LocalizadorMunicipios(dict(zip(cadastro["codigo_ibge"], cadastro["municipio"]))))
+            tabelas.update({**brutos, "citacoes": lig})
+            coberturas += cob_prop
+            if len(lig):
+                contagem = lig.pivot_table(index="codigo_ibge", columns="tipo", values="id", aggfunc="nunique",
+                                           fill_value=0).add_prefix("alesp_").reset_index()
+                tratado = tratado.merge(contagem, on="codigo_ibge", how="outer")
+        except (ConnectionRefusedError, OSError, zipfile.BadZipFile) as erro:
+            log.warning("Alesp, proposituras: %s", erro)
+            avisos.append(f"proposituras e normas: {erro}")
+        return Resultado(tabelas=tabelas, tratadas={"alesp_municipio": tratado}, coberturas=coberturas, avisos=avisos)

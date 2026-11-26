@@ -147,7 +147,13 @@ def fontes_novas(resumo: pd.DataFrame, extras: dict[str, dict], meta: dict) -> l
 
     alesp = _ler("alesp", "alesp_municipio")
     if alesp is not None and len(alesp):
-        alesp = _numeros(alesp, [c for c in alesp.columns if c.startswith("alesp_")]).set_index("codigo_ibge")
+        alesp = _numeros(alesp, [c for c in alesp.columns if c.startswith("alesp_")] +
+                         ["posicao_ranking", "total_categoria"]).set_index("codigo_ibge")
+        if "categoria_turistica" in alesp:
+            for coluna in ("categoria_turistica", "posicao_ranking", "total_categoria"):
+                resumo[coluna] = alesp[coluna].reindex(resumo.index)
+            meta["alesp_fonte_legal"] = alesp["fonte_legal"].dropna().iloc[0] if alesp["fonte_legal"].notna().any() else None
+            meta["municipios_turisticos"] = {k: int(v) for k, v in alesp["categoria_turistica"].value_counts().items()}
         if "alesp_proposituras" in alesp:
             resumo["alesp_proposituras"] = alesp["alesp_proposituras"].reindex(resumo.index).fillna(0)
         for cod, r in alesp.iterrows():

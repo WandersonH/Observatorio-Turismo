@@ -165,3 +165,21 @@ def test_status_de_execucoes_paralelas_se_junta(dados, monkeypatch):
     junto = execucao.consolidar_status()
     assert [(f["id"], f["situacao"]) for f in junto["fontes"]] == [
         ("falsa", "rodou"), ("quebrada", "falhou"), ("futura", "nao_implementado")]
+
+
+class Parcial(Coletor):
+    fonte = "parcial"
+    descricao = "coletor com uma parte fora do ar"
+
+    def coletar(self, **_):
+        return Resultado(tabelas={"t": pd.DataFrame({"x": [1]})}, coberturas=[Cobertura("parcial", "t", 1, 1, "linhas")],
+                         avisos=["proposituras: 503"])
+
+
+def test_fonte_que_roda_em_parte(dados, monkeypatch):
+    monkeypatch.setattr(execucao, "catalogo_fontes", lambda: [{"id": "parcial", "nome": "Parcial"}])
+    monkeypatch.setattr(execucao, "COLETORES", {"parcial": Parcial})
+    monkeypatch.setattr(execucao, "ORDEM", [])
+    status = execucao.rodar_tudo()
+    assert status["fontes"][0]["situacao"] == "parcial" and status["fontes"][0]["avisos"] == ["proposituras: 503"]
+    assert "não veio: proposituras: 503" in execucao.resumo(status)

@@ -4,7 +4,7 @@
 import pandas as pd
 import pytest
 
-from observatorio.coletores.alesp import registros
+from observatorio.coletores.alesp import ler_classificacao, registros
 from observatorio.coletores.anac import aeroportos_sp
 from observatorio.coletores.antt import ler_licencas, mes_do_recurso, movimentos, por_municipio
 from observatorio.coletores.caged import agregar, ler_microdados, subclasses_act
@@ -135,3 +135,18 @@ def test_pareamento_google():
     assert similaridade("Pousada Recanto do Vale", "Pousada Recanto do Vale - Guararema") > 0.6
     assert similaridade("Hotel Central", "Pizzaria Bella") < 0.6
     assert coluna_nome(pd.DataFrame(columns=["codigo_ibge", "razao_social", "nome_fantasia"])) == "nome_fantasia"
+
+
+def test_alesp_classificacao_ignora_trechos_revogados():
+    pagina = """<html><p>(&Uacute;ltima atualiza&ccedil;&atilde;o: Lei n&#176; 18.379, de 23/12/2025)</p>
+    <s><p>I - Guararema (revogado)</p></s>
+    <h4>ANEXO I<br>a que se refere o artigo 2&#176;</h4><table><tr><td>Classifica&ccedil;&atilde;o</td><td>Munic&iacute;pio</td></tr>
+    <tr><td>1.</td><td>Itanha&eacute;m</td></tr><tr><td>2.</td><td>Guararema</td></tr></table>
+    <h4>ANEXO II<br>a que se refere o artigo 3&#176;</h4><table><tr><td>Classifica&ccedil;&atilde;o</td><td>Munic&iacute;pio</td></tr>
+    <tr><td>1.</td><td>Ara&ccedil;atuba</td></tr><s><tr><td>2.</td><td>Revogada</td></tr></s></table></html>"""
+    tabela, atualizacao = ler_classificacao(pagina)
+    assert atualizacao == "Lei n° 18.379, de 23/12/2025"
+    assert tabela.to_dict("records") == [
+        {"categoria_turistica": "Estância Turística", "posicao_ranking": 1, "municipio_lei": "Itanhaém"},
+        {"categoria_turistica": "Estância Turística", "posicao_ranking": 2, "municipio_lei": "Guararema"},
+        {"categoria_turistica": "Município de Interesse Turístico", "posicao_ranking": 1, "municipio_lei": "Araçatuba"}]

@@ -61,11 +61,12 @@ fontes:
     repositorio: publico
 
   - id: alesp
-    nome: Alesp - proposituras sobre turismo e leis de classificação de MIT
+    nome: Alesp - classificação oficial de estâncias e MITs (ranking) e proposituras sobre turismo
     status: implementado
     frequencia: mensal
     eixo: governanca
     repositorio: publico
+    observacao: classificação pela Lei 17.469/2021 compilada; proposituras dependem do Portal de Dados Abertos, que recusa acesso de servidores de nuvem
 
   - id: planos_diretores
     nome: Planos diretores de turismo, COMTUR e inventários nos diários oficiais (Querido Diário)

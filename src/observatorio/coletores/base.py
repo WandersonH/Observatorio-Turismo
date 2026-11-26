@@ -35,6 +35,7 @@ class Resultado:
     tabelas: dict[str, pd.DataFrame] = field(default_factory=dict)  # camada bruta: como a fonte entrega
     tratadas: dict[str, pd.DataFrame] = field(default_factory=dict)  # camada tratada: por município e período
     coberturas: list[Cobertura] = field(default_factory=list)
+    avisos: list[str] = field(default_factory=list)  # partes da fonte que não vieram nesta rodada
 
 
 class Coletor(ABC):
