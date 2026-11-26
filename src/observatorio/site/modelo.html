@@ -12,11 +12,11 @@
   --creme:#FAF7F0;--painel:#FFFFFF;--texto:#2B2420;--muted:#6F6259;--borda:#E6DECD;--verde:#3E7A4A;
   --c1:#F3E9CF;--c2:#E2C98A;--c3:#C9A24A;--c4:#9C7428;--c5:#5C3B1E;--semdado:#E9E6E0;
 }
-*{box-sizing:border-box}
-body{margin:0;font-family:Montserrat,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--texto);background:var(--creme);line-height:1.45}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;overflow-x:clip;font-family:Montserrat,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--texto);background:var(--creme);line-height:1.45}
 a{color:var(--ouro-escuro)}
 header.topo{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--borda)}
-.topo .in{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:24px;padding:12px 24px}
+.topo .in{max-width:1240px;margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:8px 24px;padding:12px 24px}
 .marca{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--marrom)}
 .marca .selo{width:34px;height:34px;border-radius:50%;background:conic-gradient(var(--vermelho) 0 25%,var(--ouro) 0 60%,var(--marrom) 0 100%);flex:none}
 .marca b{display:block;font-size:15px;letter-spacing:.02em}
@@ -57,6 +57,7 @@ label.alternar{font-size:13px;color:var(--muted);display:flex;gap:6px;align-item
 .legenda{display:flex;gap:4px;align-items:center;font-size:11px;color:var(--muted);margin-top:8px;flex-wrap:wrap}
 .legenda i{display:inline-block;width:26px;height:10px;border-radius:2px}
 #dica{position:fixed;pointer-events:none;background:var(--marrom);color:#fff;font-size:12px;padding:6px 9px;border-radius:6px;display:none;z-index:20;max-width:260px}
+.rolar{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:14px}
 th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--borda);padding:8px 6px;cursor:pointer;white-space:nowrap}
 td{border-bottom:1px solid #F1ECE2;padding:8px 6px}
@@ -83,7 +84,9 @@ code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5p
 pre{background:#fff;border:1px solid var(--borda);border-radius:10px;padding:12px;overflow:auto}
 footer{border-top:1px solid var(--borda);margin-top:40px;background:#fff}
 footer .in{max-width:1240px;margin:0 auto;padding:18px 24px;font-size:12px;color:var(--muted);display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
-@media (max-width:900px){.hero,.grade2{grid-template-columns:1fr}h1{font-size:30px}}
+@media (max-width:900px){.hero,.grade2,.cab-mun{grid-template-columns:1fr!important}h1{font-size:30px}}
+@media (max-width:600px){main{padding:16px}nav.menu{margin-left:0;width:100%;overflow-x:auto;flex-wrap:nowrap}nav.menu a{flex:none;padding:6px 10px}
+  th{white-space:normal}table{font-size:13px}.ocultar-cel{display:none}.barras .linha{grid-template-columns:minmax(90px,40%) 1fr 96px}}
 </style>
 </head>
 <body>
@@ -167,15 +170,17 @@ function rotear() {
 let mapasPendentes = [];
 function desenharMapasPendentes() { const p = mapasPendentes; mapasPendentes = []; p.forEach(f => f()); }
 
+// Zero fica numa classe própria (muitos municípios não têm registro); os valores positivos vão em quatro quantis
 function classes(valores) {
-  const v = valores.filter(x => x != null && !Number.isNaN(x)).sort((a, b) => a - b);
+  const v = valores.filter(x => x != null && !Number.isNaN(x) && x > 0).sort((a, b) => a - b);
   if (!v.length) return [];
-  return [0.2, 0.4, 0.6, 0.8].map(q => v[Math.min(v.length - 1, Math.floor(q * v.length))]);
+  return [0.25, 0.5, 0.75].map(q => v[Math.min(v.length - 1, Math.floor(q * v.length))]);
 }
 function corDe(v, limites) {
   if (v == null || Number.isNaN(v)) return 'var(--semdado)';
+  if (v <= 0) return CORES[0];
   let i = 0; while (i < limites.length && v > limites[i]) i++;
-  return CORES[i];
+  return CORES[i + 1];
 }
 
 function desenharMapa(alvo, opcoes) {
@@ -209,7 +214,8 @@ function desenharMapa(alvo, opcoes) {
 
 function legenda(limites, formatar) {
   if (!limites.length) return '<div class="legenda">Sem dados para este indicador.</div>';
-  const rot = [`até ${formatar(limites[0])}`, ...limites.slice(1).map((l, i) => `${formatar(limites[i])} a ${formatar(l)}`), `acima de ${formatar(limites[3])}`];
+  const rot = ['zero', `até ${formatar(limites[0])}`, `${formatar(limites[0])} a ${formatar(limites[1])}`,
+               `${formatar(limites[1])} a ${formatar(limites[2])}`, `acima de ${formatar(limites[2])}`];
   return `<div class="legenda">${CORES.map((c, i) => `<i style="background:${c}"></i>${esc(rot[i])}`).join(' ')} <i style="background:var(--semdado)"></i>sem dado · contorno escuro: base AMITESP</div>`;
 }
 
@@ -254,7 +260,7 @@ function paginaInicio() {
   </section>
   <section class="cartao" style="margin-top:20px">
     <h2 id="titulo-ranking"></h2>
-    <div id="ranking"></div>
+    <div id="ranking" class="rolar"></div>
     <p class="nota"><a href="#municipios">Ver todos os municípios</a></p>
   </section>`;
   document.getElementById('form-busca').addEventListener('submit', ev => {
@@ -280,8 +286,8 @@ function atualizarInicio() {
   document.getElementById('fonte-ind').textContent = `Fonte: ${fonte?.nome || ind.fonte}. ${ind.n_base ?? 0} de ${E.meta.municipios_base} municípios da base com dado; mediana da base: ${formatar(ind.mediana_base)}.`;
   document.getElementById('titulo-ranking').textContent = `Base AMITESP: ${ind.nome}`;
   const lista = E.munis.filter(m => m.na_base_amitesp && m[id] != null).sort((a, b) => b[id] - a[id]).slice(0, 15);
-  document.getElementById('ranking').innerHTML = `<table><thead><tr><th>#</th><th>Município</th><th>Região turística</th><th class="num">${esc(ind.curto)}</th></tr></thead>
-    <tbody>${lista.map((m, i) => `<tr><td>${i + 1}</td><td><a href="#municipio-${m.cod}">${esc(m.municipio)}</a></td><td>${esc(m.regiao_turistica || '')}</td><td class="num">${formatar(m[id])}</td></tr>`).join('')}</tbody></table>`;
+  document.getElementById('ranking').innerHTML = `<table><thead><tr><th>#</th><th>Município</th><th class="ocultar-cel">Região turística</th><th class="num">${esc(ind.curto)}</th></tr></thead>
+    <tbody>${lista.map((m, i) => `<tr><td>${i + 1}</td><td><a href="#municipio-${m.cod}">${esc(m.municipio)}</a></td><td class="ocultar-cel">${esc(m.regiao_turistica || '')}</td><td class="num">${formatar(m[id])}</td></tr>`).join('')}</tbody></table>`;
 }
 
 async function paginaMunicipio(cod) {
@@ -340,7 +346,7 @@ async function paginaMunicipio(cod) {
         <p class="nota">Fonte: Siconfi (Tesouro Nacional), DCA Anexo I-E, subfunção 23.695. "Não declarada" é diferente de zero.</p>
       </section>
     </div>
-    <section class="cartao">
+    <section class="cartao rolar">
       <h3>Comparação</h3>
       <table><thead><tr><th>Indicador</th><th class="num">${esc(m.municipio)}</th><th class="num">Mediana da base</th><th class="num">Mediana de SP</th><th class="num">Posição na base</th></tr></thead>
       <tbody>${comparar.map(i => `<tr><td>${esc(i.nome)}</td><td class="num">${fmtInd(i.id, m[i.id])}</td><td class="num">${fmtInd(i.id, i.mediana_base)}</td><td class="num">${fmtInd(i.id, i.mediana_sp)}</td><td class="num">${m['pos_base_' + i.id] ? nf(m['pos_base_' + i.id]) + 'º de ' + i.n_base : '–'}</td></tr>`).join('')}</tbody></table>
@@ -351,7 +357,7 @@ async function paginaMunicipio(cod) {
       <p class="nota">Detalhes em <a href="#fontes">Fontes e cobertura</a>.</p>
     </section>`;
   const formatar = v => fmtInd('hosp_10k', v);
-  desenharMapa(document.getElementById('mapa-mun'), {valor: x => x.na_base_amitesp ? 1 : null, destaque: cod, limites: [0, 0, 0, 0],
+  desenharMapa(document.getElementById('mapa-mun'), {valor: x => x.na_base_amitesp ? 1 : null, destaque: cod, limites: [0, 0, 1],
     formatar: v => v ? 'base AMITESP' : 'fora da base', rotulo: 'Situação', aoClicar: c => location.hash = '#municipio-' + c});
 }
 
