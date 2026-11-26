@@ -18,12 +18,17 @@ Os coletores leem fontes públicas e plataformas, ligam cada registro ao municí
 | IBGE | implementado | anual | Cadastro mestre: 645 municípios de SP, população, marcação dos 101 da base AMITESP |
 | Cadastur (MTur) | implementado | trimestral | Prestadores formais por categoria, município, leitos e UHs |
 | Siconfi (Tesouro) | implementado | anual | Despesa empenhada em turismo (subfunção 695), total e por habitante |
-| Novo CAGED | planejado | mensal | Emprego nas 59 atividades características do turismo |
-| ANAC e ANTT | planejado | mensal | Chegadas aéreas e de fretamento turístico |
-| CETESB | planejado | anual | Resíduos, aterros e qualidade das águas |
-| Alesp | planejado | mensal | Proposituras sobre turismo e leis de classificação de MIT |
-| Planos diretores | planejado | trimestral | Planos de turismo, atas do COMTUR e inventários |
-| Google Places e TripAdvisor | planejado | trimestral | Pareamento com o Cadastur, atrativos, notas e avaliações |
+| Novo CAGED (MTE) | implementado | mensal | Admissões, desligamentos e saldo nas atividades características do turismo, 12 meses |
+| ANAC | implementado | mensal | Passageiros desembarcados nos aeroportos de SP, por município do aeroporto |
+| ANTT | implementado | mensal | Ônibus de fretamento eventual e turístico interestadual chegando e saindo |
+| CETESB | implementado | anual | Índice de Qualidade de Aterro (IQR) e toneladas de resíduos por dia |
+| Alesp | implementado | mensal | Proposituras e normas sobre turismo que citam cada município |
+| Diários oficiais (Querido Diário) | implementado | trimestral | Menções a plano diretor de turismo, COMTUR e inventário turístico |
+| Google Notícias e OpenAlex | implementado | mensal | Notícias sobre turismo (30 dias) e trabalhos acadêmicos por município |
+| Google Places | implementado, exige chave | trimestral | Hospedagens do Cadastur pareadas no Google, nota e oferta fora do Cadastur |
+| TripAdvisor | planejado | trimestral | Inventário de atrativos |
+
+Chaves opcionais, como segredos do repositório: `GOOGLE_PLACES_API_KEY` (sem ela o Google Places fica como "falta credencial") e `OPENALEX_API_KEY` (sem ela a OpenAlex usa o orçamento diário compartilhado).
 
 O catálogo completo está em [`config/fontes.yaml`](config/fontes.yaml). Coletores por raspagem ficam num repositório privado até decisão do convênio.
 

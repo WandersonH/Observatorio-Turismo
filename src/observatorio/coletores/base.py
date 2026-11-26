@@ -51,6 +51,31 @@ class Coletor(ABC):
         resposta.raise_for_status()
         return resposta
 
+    def baixar_arquivo(self, url: str, destino, tentativas: int = 6) -> int:
+        """Baixa um arquivo grande para o disco, retomando do ponto em que a conexão caiu (Range)."""
+        import time
+
+        recebidos = 0
+        with open(destino, "wb") as f:
+            for tentativa in range(tentativas):
+                cabecalhos = {"Range": f"bytes={recebidos}-"} if recebidos else {}
+                try:
+                    with self.sessao.get(url, stream=True, timeout=120, headers=cabecalhos) as r:
+                        if recebidos and r.status_code != 206:
+                            f.seek(0)
+                            f.truncate()
+                            recebidos = 0
+                        r.raise_for_status()
+                        for pedaco in r.iter_content(1 << 20):
+                            f.write(pedaco)
+                            recebidos += len(pedaco)
+                    return recebidos
+                except (requests.ConnectionError, requests.Timeout,
+                        requests.exceptions.ChunkedEncodingError) as erro:
+                    log.warning("download interrompido em %d bytes (%s); retomando", recebidos, type(erro).__name__)
+                    time.sleep(5 * (tentativa + 1))
+        raise RuntimeError(f"download não concluído após {tentativas} tentativas: {url}")
+
     @abstractmethod
     def coletar(self, **parametros) -> Resultado: ...
 

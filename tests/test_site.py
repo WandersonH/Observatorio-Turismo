@@ -118,3 +118,34 @@ def test_site_publica_indicadores_e_nao_declarado(dados, monkeypatch):
     assert (saida / "index.html").read_text().startswith("<!DOCTYPE html>")
     # nenhum dado de estabelecimento vai para o site
     assert not any("cnpj" in p.read_text().lower() for p in api.rglob("*.json"))
+
+
+def test_site_com_fontes_novas(dados, monkeypatch):
+    _cargas()
+    armazenamento.salvar(pd.DataFrame({
+        "codigo_ibge": ["3500001"] * 3, "mes": ["2026-08", "2026-09", "2026-09"],
+        "grupo": ["Alojamento", "Alojamento", "Alimentação"], "admissoes": [5, 3, 10], "desligamentos": [2, 4, 6],
+        "saldo": [3, -1, 4]}), "caged", "emprego_act", camada="tratado")
+    armazenamento.salvar(pd.DataFrame({
+        "codigo_ibge": ["3500002"], "mes": ["2026-09"], "licencas_chegada": [10], "licencas_saida": [2],
+        "passageiros_chegada": [400], "passageiros_saida": [60]}), "antt", "licencas_municipio", camada="tratado")
+    armazenamento.salvar(pd.DataFrame({
+        "codigo_ibge": ["3500001"], "ano": [2021], "ugrhi": [2], "residuos_t_dia": [20.5], "iqr_ano_anterior": [9.7],
+        "iqr": [8.9], "destino": ["Jambeiro - A.P."], "iqr_adequado": [True]}), "cetesb", "iqr_municipio", camada="tratado")
+    armazenamento.salvar(pd.DataFrame({
+        "codigo_ibge": ["3500002"], "mes": ["2026-09"], "passageiros": [1000.0], "passageiros_domestica": [1000.0]}),
+        "anac", "passageiros_municipio", camada="tratado")
+    monkeypatch.setattr(site, "_malha", lambda: None)
+    api = site.construir(dados / "_site") / "api" / "v1"
+    municipios = {m["cod"]: m for m in json.loads((api / "municipios.json").read_text())}
+    alfa, beta, gama = municipios["3500001"], municipios["3500002"], municipios["3500003"]
+    assert alfa["emp_saldo"] == 6 and alfa["emp_adm"] == 18 and gama["emp_saldo"] == 0
+    assert beta["frete_cheg"] == 10 and beta["frete_10k"] == pytest.approx(2.0)
+    assert alfa["iqr"] == 8.9 and beta["iqr"] is None
+    assert beta["pax_aereo"] == 1000 and alfa["pax_aereo"] is None  # sem aeroporto: sem dado, não zero
+    detalhe = json.loads((api / "municipios" / "3500001.json").read_text())
+    assert detalhe["caged_grupos"][0]["grupo"] == "Alimentação" and detalhe["cetesb"]["iqr"] == 8.9
+    meta = json.loads((api / "meta.json").read_text())
+    assert meta["caged_periodo"] == "2026-08 a 2026-09" and meta["cetesb_ano"] == 2021
+    nomes = {i["id"]: i["nome"] for i in json.loads((api / "indicadores.json").read_text())}
+    assert "(2021)" in nomes["iqr"] and "2026-08 a 2026-09" in nomes["emp_saldo"]

@@ -47,8 +47,125 @@ INDICADORES = [
      "unidade": "R$ por hab.", "fonte": "siconfi", "casas": 2},
     {"id": "tur_part", "nome": "Participação do turismo na despesa municipal", "curto": "Turismo % despesa",
      "unidade": "% da despesa", "fonte": "siconfi", "casas": 2},
+    {"id": "emp_saldo", "nome": "Saldo de empregos formais nas atividades do turismo", "curto": "Saldo de empregos ACT",
+     "unidade": "vagas em 12 meses", "fonte": "caged", "casas": 0},
+    {"id": "emp_adm_1k", "nome": "Admissões nas atividades do turismo por mil habitantes", "curto": "Admissões ACT / mil hab.",
+     "unidade": "por mil hab. em 12 meses", "fonte": "caged", "casas": 1},
+    {"id": "frete_10k", "nome": "Ônibus de fretamento interestadual chegando, por 10 mil habitantes",
+     "curto": "Fretamentos / 10 mil hab.", "unidade": "licenças por 10 mil hab. em 12 meses", "fonte": "antt", "casas": 1},
+    {"id": "pax_aereo", "nome": "Passageiros desembarcados no aeroporto do município", "curto": "Passageiros aéreos",
+     "unidade": "passageiros em 12 meses", "fonte": "anac", "casas": 0},
+    {"id": "iqr", "nome": "Qualidade do aterro de resíduos (IQR)", "curto": "IQR (0 a 10)", "unidade": "índice de 0 a 10",
+     "fonte": "cetesb", "casas": 1},
+    {"id": "noticias", "nome": "Notícias sobre turismo no município nos últimos 30 dias", "curto": "Notícias 30 dias",
+     "unidade": "notícias (teto de 100)", "fonte": "producoes", "casas": 0},
+    {"id": "academicos", "nome": "Trabalhos acadêmicos que citam o município e turismo", "curto": "Trabalhos acadêmicos",
+     "unidade": "trabalhos (OpenAlex)", "fonte": "producoes", "casas": 0},
+    {"id": "alesp_proposituras", "nome": "Proposituras da Alesp sobre turismo que citam o município",
+     "curto": "Proposituras Alesp", "unidade": "proposituras", "fonte": "alesp", "casas": 0},
+    {"id": "google_fora", "nome": "Hospedagens visíveis no Google e ausentes do Cadastur", "curto": "Hospedagem fora do Cadastur",
+     "unidade": "estabelecimentos", "fonte": "google_places", "casas": 0},
     {"id": "pop", "nome": "População", "curto": "População", "unidade": "habitantes", "fonte": "ibge", "casas": 0},
 ]
+
+
+def _ultimos_meses(df: pd.DataFrame, meses: int = 12) -> tuple[pd.DataFrame, list[str]]:
+    janela = sorted(df["mes"].dropna().astype(str).unique())[-meses:]
+    return df[df["mes"].astype(str).isin(janela)], janela
+
+
+def _numeros(df: pd.DataFrame, colunas) -> pd.DataFrame:
+    df = df.copy()
+    df["codigo_ibge"] = df["codigo_ibge"].astype(str)
+    for c in colunas:
+        if c in df:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+    return df
+
+
+def fontes_novas(resumo: pd.DataFrame, extras: dict[str, dict], meta: dict) -> list[str]:
+    """Acrescenta ao resumo os indicadores das fontes novas que tiverem carga; devolve os sufixos de nome."""
+    pop = resumo["populacao"]
+
+    def detalhe(cod, chave, valor):
+        extras.setdefault(str(cod), {})[chave] = valor
+
+    caged = _ler("caged", "emprego_act")
+    if caged is not None and len(caged):
+        caged, janela = _ultimos_meses(_numeros(caged, ["admissoes", "desligamentos", "saldo"]))
+        soma = caged.groupby("codigo_ibge")[["admissoes", "desligamentos", "saldo"]].sum()
+        resumo["emp_saldo"] = soma["saldo"].reindex(resumo.index).fillna(0)
+        resumo["emp_adm"] = soma["admissoes"].reindex(resumo.index).fillna(0)
+        resumo["emp_adm_1k"] = resumo["emp_adm"] / pop * 1e3
+        meta["caged_periodo"] = f"{janela[0]} a {janela[-1]}"
+        for cod, g in caged.groupby("codigo_ibge"):
+            grupos = g.groupby("grupo")[["admissoes", "desligamentos", "saldo"]].sum().reset_index()
+            detalhe(cod, "caged_grupos", [{k: _limpo(v) for k, v in r.items()}
+                                          for r in grupos.sort_values("admissoes", ascending=False).to_dict("records")])
+            mensal = g.groupby("mes")["saldo"].sum()
+            detalhe(cod, "caged_mensal", [{"mes": m, "saldo": _limpo(v)} for m, v in mensal.items()])
+
+    antt = _ler("antt", "licencas_municipio")
+    if antt is not None and len(antt):
+        antt, janela = _ultimos_meses(_numeros(antt, ["licencas_chegada", "licencas_saida", "passageiros_chegada",
+                                                      "passageiros_saida"]))
+        soma = antt.groupby("codigo_ibge")[["licencas_chegada", "passageiros_chegada", "licencas_saida"]].sum()
+        resumo["frete_cheg"] = soma["licencas_chegada"].reindex(resumo.index).fillna(0)
+        resumo["frete_pax"] = soma["passageiros_chegada"].reindex(resumo.index).fillna(0)
+        resumo["frete_saida"] = soma["licencas_saida"].reindex(resumo.index).fillna(0)
+        resumo["frete_10k"] = resumo["frete_cheg"] / pop * 1e4
+        meta["antt_periodo"] = f"{janela[0]} a {janela[-1]}"
+        for cod, g in antt.groupby("codigo_ibge"):
+            detalhe(cod, "antt_mensal", [{"mes": r["mes"], "chegadas": _limpo(r["licencas_chegada"]),
+                                          "passageiros": _limpo(r["passageiros_chegada"])}
+                                         for r in g.sort_values("mes").to_dict("records")])
+
+    anac = _ler("anac", "passageiros_municipio")
+    if anac is not None and len(anac):
+        anac, janela = _ultimos_meses(_numeros(anac, [c for c in anac.columns if c.startswith("passageiros")]))
+        soma = anac.groupby("codigo_ibge")["passageiros"].sum()
+        resumo["pax_aereo"] = soma.reindex(resumo.index)  # sem aeroporto com voo: sem dado, não zero
+        meta["anac_periodo"] = f"{janela[0]} a {janela[-1]}"
+        for cod, g in anac.groupby("codigo_ibge"):
+            detalhe(cod, "anac_mensal", [{"mes": r["mes"], "passageiros": _limpo(r["passageiros"])}
+                                         for r in g.sort_values("mes").to_dict("records")])
+
+    cetesb = _ler("cetesb", "iqr_municipio")
+    if cetesb is not None and len(cetesb):
+        cetesb = _numeros(cetesb, ["iqr", "iqr_ano_anterior", "residuos_t_dia", "ano"]).set_index("codigo_ibge")
+        resumo["iqr"] = cetesb["iqr"].reindex(resumo.index)
+        resumo["residuos_t_dia"] = cetesb["residuos_t_dia"].reindex(resumo.index)
+        meta["cetesb_ano"] = int(cetesb["ano"].max())
+        for cod, r in cetesb.iterrows():
+            detalhe(cod, "cetesb", {k: _limpo(r[k]) for k in ("ano", "iqr", "iqr_ano_anterior", "residuos_t_dia", "destino")
+                                   if k in r})
+
+    prod = _ler("producoes", "producoes_municipio")
+    if prod is not None and len(prod):
+        prod = _numeros(prod, ["noticias_30d", "trabalhos_academicos"]).set_index("codigo_ibge")
+        resumo["noticias"] = prod["noticias_30d"].reindex(resumo.index)
+        resumo["academicos"] = prod["trabalhos_academicos"].reindex(resumo.index)
+
+    alesp = _ler("alesp", "alesp_municipio")
+    if alesp is not None and len(alesp):
+        alesp = _numeros(alesp, [c for c in alesp.columns if c.startswith("alesp_")]).set_index("codigo_ibge")
+        if "alesp_proposituras" in alesp:
+            resumo["alesp_proposituras"] = alesp["alesp_proposituras"].reindex(resumo.index).fillna(0)
+        for cod, r in alesp.iterrows():
+            detalhe(cod, "alesp", {k: _limpo(v) for k, v in r.items()})
+
+    gov = _ler("planos_diretores", "governanca_municipio")
+    if gov is not None and len(gov):
+        for r in _numeros(gov, []).to_dict("records"):
+            detalhe(r["codigo_ibge"], "governanca", {k: _limpo(v) for k, v in r.items() if k not in ("codigo_ibge", "municipio")})
+
+    google = _ler("google_places", "google_municipio")
+    if google is not None and len(google):
+        google = _numeros(google, ["fora_do_cadastur", "hospedagens_google", "hosp_pareadas", "nota_mediana"]).set_index("codigo_ibge")
+        resumo["google_fora"] = google["fora_do_cadastur"].reindex(resumo.index)
+        for cod, r in google.iterrows():
+            detalhe(cod, "google", {k: _limpo(v) for k, v in r.items()})
+    return []
 
 
 def _limpo(valor):
@@ -197,7 +314,11 @@ def construir(saida: str | Path = "_site") -> Path:
                  "participacao": _limpo(r["participacao_turismo"]), "per_capita": _limpo(r["turismo_per_capita"])}
                 for r in grupo.to_dict("records")]
 
-    indicadores = [i for i in INDICADORES if i["id"] in resumo.columns]
+    extras: dict[str, dict] = {}
+    meta_fontes: dict = {}
+    fontes_novas(resumo, extras, meta_fontes)
+
+    indicadores = [dict(i) for i in INDICADORES if i["id"] in resumo.columns]
     base = resumo["na_base_amitesp"]
     for ind in indicadores:
         coluna = resumo[ind["id"]].astype(float)
@@ -207,17 +328,19 @@ def construir(saida: str | Path = "_site") -> Path:
         resumo[f"pos_sp_{ind['id']}"] = coluna.rank(ascending=False, method="min")
         ind["n_base"] = int(coluna[base].notna().sum())
         ind["n_sp"] = int(coluna.notna().sum())
-    if ano_siconfi:
-        for ind in indicadores:
-            if ind["fonte"] == "siconfi":
-                ind["nome"] += f" ({ano_siconfi})"
+    sufixos = {"siconfi": ano_siconfi, "cetesb": meta_fontes.get("cetesb_ano"),
+               "caged": meta_fontes.get("caged_periodo"), "antt": meta_fontes.get("antt_periodo"),
+               "anac": meta_fontes.get("anac_periodo")}
+    for ind in indicadores:
+        if sufixos.get(ind["fonte"]):
+            ind["nome"] += f" ({sufixos[ind['fonte']]})"
 
     linhas, detalhes = [], []
     for cod, r in resumo.iterrows():
         linha = {"cod": cod, **{k: _limpo(v) for k, v in r.items()}}
         linhas.append(linha)
         detalhe = {**linha, "cadastur": {"periodo": periodo_cadastur, "categorias": categorias_por_mun.get(cod, [])},
-                   "siconfi": series_siconfi.get(cod, [])}
+                   "siconfi": series_siconfi.get(cod, []), **extras.get(str(cod), {})}
         detalhes.append(detalhe)
         _gravar(api / "municipios" / f"{cod}.json", detalhe)
     _gravar(api / "municipios_detalhe.json", detalhes)  # todos de uma vez, para quem quer baixar tudo
@@ -230,6 +353,7 @@ def construir(saida: str | Path = "_site") -> Path:
         "ano_siconfi": ano_siconfi,
         "municipios_sp": int(len(resumo)),
         "municipios_base": int(base.sum()),
+        **meta_fontes,
         "repositorio": "https://github.com/WandersonH/observatorio-turismo",
     }
     _gravar(api / "municipios.json", linhas)

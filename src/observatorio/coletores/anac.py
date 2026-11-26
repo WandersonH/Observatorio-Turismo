@@ -66,11 +66,7 @@ class ColetorANAC(Coletor):
 
         partes, linhas_lidas = [], 0
         with tempfile.NamedTemporaryFile(suffix=".csv") as arquivo:
-            with self.sessao.get(SERIE, stream=True, timeout=600) as resposta:  # ~360 MB
-                resposta.raise_for_status()
-                for pedaco in resposta.iter_content(1 << 20):
-                    arquivo.write(pedaco)
-            arquivo.flush()
+            self.baixar_arquivo(SERIE, arquivo.name)  # ~360 MB, com retomada
             with open(arquivo.name, encoding="utf-8-sig") as f:
                 pular = 1 if f.readline().lower().startswith("atualizado") else 0
             for bloco in pd.read_csv(arquivo.name, sep=";", skiprows=pular, dtype=str, encoding="utf-8-sig",

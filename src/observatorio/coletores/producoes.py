@@ -30,7 +30,7 @@ log = logging.getLogger(__name__)
 
 RSS = "https://news.google.com/rss/search"
 OPENALEX = "https://api.openalex.org/works"
-PAUSA = 1.0
+PAUSA = 1.5
 
 
 def itens_rss(xml: str) -> list[dict]:
@@ -54,7 +54,12 @@ class ColetorProducoes(Coletor):
 
     def noticias(self, municipio: str) -> list[dict]:
         consulta = f'"{municipio}" turismo SP when:30d'
-        r = self.get(RSS, params={"q": consulta, "hl": "pt-BR", "gl": "BR", "ceid": "BR:pt-419"})
+        for espera in (0, 30, 90):  # o Google responde 429 quando as consultas vêm rápido demais
+            time.sleep(espera)
+            r = self.sessao.get(RSS, params={"q": consulta, "hl": "pt-BR", "gl": "BR", "ceid": "BR:pt-419"}, timeout=60)
+            if r.status_code != 429:
+                break
+        r.raise_for_status()
         return itens_rss(r.text)
 
     def academicos(self, municipio: str, chave: str | None) -> tuple[int | None, list[dict], str | None]:

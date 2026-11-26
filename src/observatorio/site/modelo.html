@@ -75,6 +75,8 @@ tr:hover td{background:#FCFAF5}
 .s-falhou{background:#FBE4DF;color:var(--vermelho)}
 .s-nao_implementado{background:#EFECE6;color:#7A7066}
 .s-aguarda_decisao{background:#FFF1D1;color:#8A6400}
+.s-falta_credencial{background:#E8EEF8;color:#2F4F86}
+.kpis.secundarios .kpi .v{font-size:22px}
 .s-nao_executado{background:#EFECE6;color:#7A7066}
 .pendentes{display:flex;flex-wrap:wrap;gap:8px}
 .pendentes span{font-size:12px;border:1px dashed #C9BFAE;color:var(--muted);border-radius:8px;padding:5px 10px}
@@ -117,7 +119,8 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '
 const app = document.getElementById('app');
 const dica = document.getElementById('dica');
 const SITUACAO = {rodou: 'Rodou', falhou: 'Falhou', nao_implementado: 'Não implementado',
-                  aguarda_decisao: 'Aguarda decisão do convênio', nao_executado: 'Não executado'};
+                  aguarda_decisao: 'Aguarda decisão do convênio', nao_executado: 'Não executado',
+                  falta_credencial: 'Falta credencial'};
 const CORES = ['--c1', '--c2', '--c3', '--c4', '--c5'].map(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim());
 
 async function obter(caminho) {
@@ -148,6 +151,7 @@ function fmtInd(id, v) {
   if (v == null) return '–';
   if (id === 'tur_pc') return 'R$ ' + nf(v, 2);
   if (id === 'tur_part') return nf(v, 2) + '%';
+  if (id === 'emp_saldo') return (v > 0 ? '+' : '') + nf(v, 0);
   return nf(v, indicador(id).casas ?? 1);
 }
 function pendentes() { return (E.status?.fontes || []).filter(f => f.situacao !== 'rodou'); }
@@ -314,6 +318,24 @@ async function paginaMunicipio(cod) {
   const maxSerie = Math.max(1, ...serie.map(s => s.turismo || 0));
   const comparar = E.ind.filter(i => i.id !== 'pop');
   const faltando = pendentes();
+  const tem = id => E.ind.some(i => i.id === id);
+  const secundarios = [
+    tem('emp_saldo') ? kpi(`saldo de empregos no turismo (${esc(E.meta.caged_periodo || '')})`, fmtInd('emp_saldo', m.emp_saldo),
+      `${nf(m.emp_adm)} admissões · ${fmtInd('emp_adm_1k', m.emp_adm_1k)} por mil hab.`) : '',
+    tem('frete_10k') ? kpi('ônibus de fretamento interestadual chegando (12 meses)', nf(m.frete_cheg),
+      `${nf(m.frete_pax)} passageiros declarados · ${fmtInd('frete_10k', m.frete_10k)} por 10 mil hab.`) : '',
+    tem('pax_aereo') && m.pax_aereo != null ? kpi('passageiros desembarcados no aeroporto (12 meses)', nf(m.pax_aereo), 'ANAC') : '',
+    tem('iqr') ? (m.iqr == null ? kpi('qualidade do aterro (IQR)', 'sem IQR', 'resíduos dispostos fora do estado ou sem avaliação', true)
+      : kpi(`qualidade do aterro, IQR ${E.meta.cetesb_ano || ''}`, nf(m.iqr, 1), `${m.iqr > 7 ? 'disposição adequada' : 'disposição inadequada'} · ${nf(m.residuos_t_dia, 1)} t/dia de resíduos`)) : '',
+    tem('noticias') && m.noticias != null ? kpi('notícias sobre turismo (30 dias)', nf(m.noticias),
+      `<a href="https://news.google.com/search?q=${encodeURIComponent('"' + m.municipio + '" turismo SP')}&hl=pt-BR&gl=BR&ceid=BR:pt-419" target="_blank">ver no Google Notícias</a>`) : '',
+    tem('academicos') && m.academicos != null ? kpi('trabalhos acadêmicos (OpenAlex)', nf(m.academicos), 'menções a município e turismo, não validadas') : '',
+  ].filter(Boolean);
+  const grupos = m.caged_grupos || [];
+  const maxGrupo = Math.max(1, ...grupos.map(g => g.admissoes || 0));
+  const frete = m.antt_mensal || [];
+  const maxFrete = Math.max(1, ...frete.map(f => f.chegadas || 0));
+  const gov = m.governanca;
   app.innerHTML = `
     <p class="nota"><a href="#mapa">Mapa</a> › ${esc(m.municipio)}</p>
     <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start" class="cab-mun">
@@ -329,6 +351,7 @@ async function paginaMunicipio(cod) {
           ${temCadastur ? kpi('prestadores turísticos formais', nf(m.cadastur_total), `${fmtInd('cad_10k', m.cad_10k)} por 10 mil hab. · ${posBase('cad_10k')}`) : ''}
           ${turismo}
         </div>
+        ${secundarios.length ? `<div class="kpis secundarios">${secundarios.join('')}</div>` : ''}
       </div>
       <div class="cartao"><div class="mapa" id="mapa-mun"></div><p class="nota">Localização no estado</p></div>
     </div>
@@ -346,6 +369,26 @@ async function paginaMunicipio(cod) {
         <p class="nota">Fonte: Siconfi (Tesouro Nacional), DCA Anexo I-E, subfunção 23.695. "Não declarada" é diferente de zero.</p>
       </section>
     </div>
+    ${grupos.length || frete.length ? `<div class="grade2">
+      ${grupos.length ? `<section class="cartao barras">
+        <h3>Empregos formais nas atividades do turismo (${esc(E.meta.caged_periodo || '')})</h3>
+        <div class="linha" style="font-size:11px;color:var(--muted)"><span>Grupo</span><span>admissões</span><span class="valor">saldo</span></div>
+        ${grupos.map(g => `<div class="linha"><span>${esc(g.grupo)}</span><span class="trilho"><span class="cheio" style="display:block;width:${(g.admissoes || 0) / maxGrupo * 100}%"></span></span><span class="valor">${(g.saldo > 0 ? '+' : '') + nf(g.saldo)}</span></div>`).join('')}
+        <p class="nota">Fonte: Novo CAGED (MTE), microdados, 88 subclasses das atividades características do turismo (SIMT/IPEA). Barra: admissões; número: saldo.</p>
+      </section>` : ''}
+      ${frete.length ? `<section class="cartao barras">
+        <h3>Ônibus de fretamento interestadual chegando</h3>
+        ${frete.map(f => `<div class="linha"><span>${esc(f.mes)}</span><span class="trilho"><span class="cheio" style="display:block;width:${(f.chegadas || 0) / maxFrete * 100}%"></span></span><span class="valor">${nf(f.chegadas)}</span></div>`).join('')}
+        <p class="nota">Fonte: ANTT, licenças de viagem de fretamento eventual e turístico. Só viagens interestaduais e internacionais; o fretamento dentro de SP é da ARTESP.</p>
+      </section>` : ''}
+    </div>` : ''}
+    ${gov ? `<section class="cartao" style="margin-bottom:16px">
+      <h3>Governança nos diários oficiais</h3>
+      ${gov.no_querido_diario ? `<table><tbody>${[['plano_diretor', 'Plano diretor de turismo'], ['comtur', 'Conselho municipal de turismo'], ['inventario', 'Inventário turístico']].map(([k, r]) =>
+        `<tr><td>${r}</td><td class="num">${nf(gov[k + '_edicoes'] || 0)} edições</td><td>${gov[k + '_url'] ? `<a href="${esc(gov[k + '_url'])}" target="_blank">mais recente: ${dataBR(gov[k + '_ultima'])}</a>` : '–'}</td></tr>`).join('')}</tbody></table>
+        <p class="nota">Menção no diário oficial é pista, não prova de que o documento existe ou está vigente.</p>`
+      : '<p class="nota">O diário oficial deste município não está no Querido Diário.</p>'}
+    </section>` : ''}
     <section class="cartao rolar">
       <h3>Comparação</h3>
       <table><thead><tr><th>Indicador</th><th class="num">${esc(m.municipio)}</th><th class="num">Mediana da base</th><th class="num">Mediana de SP</th><th class="num">Posição na base</th></tr></thead>
@@ -393,13 +436,14 @@ function paginaFontes() {
       <div class="kpi"><div class="v">${conta('rodou')}</div><div class="r"><span class="situacao s-rodou">Rodou</span></div></div>
       <div class="kpi"><div class="v">${conta('falhou')}</div><div class="r"><span class="situacao s-falhou">Falhou</span></div></div>
       <div class="kpi"><div class="v">${conta('nao_implementado')}</div><div class="r"><span class="situacao s-nao_implementado">Não implementado</span></div></div>
+      <div class="kpi"><div class="v">${conta('falta_credencial')}</div><div class="r"><span class="situacao s-falta_credencial">Falta credencial</span></div></div>
       <div class="kpi"><div class="v">${conta('aguarda_decisao')}</div><div class="r"><span class="situacao s-aguarda_decisao">Aguarda decisão</span></div></div>
     </div>
     <div class="cartao" style="overflow:auto"><table><thead><tr><th>Fonte</th><th>Situação</th><th>Frequência</th><th>Cobertura da última coleta</th></tr></thead><tbody>
     ${fontes.map(f => `<tr><td><b>${esc(f.nome || f.id)}</b><div class="nota">${esc([].concat(f.eixo || []).join(', '))}${f.repositorio === 'privado' ? ' · repositório privado' : ''}</div></td>
       <td><span class="situacao s-${f.situacao}">${SITUACAO[f.situacao] || f.situacao}</span>${f.duracao_s ? `<div class="nota">${nf(f.duracao_s)} s</div>` : ''}</td>
       <td>${esc(f.frequencia || '')}</td>
-      <td>${f.situacao === 'falhou' ? `<span class="nota" style="color:var(--vermelho)">${esc(f.erro)}</span>`
+      <td>${['falhou', 'falta_credencial'].includes(f.situacao) ? `<span class="nota" style="color:${f.situacao === 'falhou' ? 'var(--vermelho)' : '#2F4F86'}">${esc(f.erro)}</span>`
         : (f.coberturas || []).map(c => `<div><b>${nf(c.amostra)}</b> de ${nf(c.universo)} ${esc(c.unidade)}${c.taxa != null ? ` (${nf(c.taxa * 100, 1)}%)` : ''}${c.municipios_esperados ? ` · ${nf(c.municipios_com_dado)}/${nf(c.municipios_esperados)} municípios da base` : ''} <span class="nota">${esc(c.tabela)}</span></div>`).join('') || `<span class="nota">${esc(f.observacao || '')}</span>`}</td></tr>`).join('')}
     </tbody></table></div>`;
 }

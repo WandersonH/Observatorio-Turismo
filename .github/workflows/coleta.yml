@@ -64,7 +64,9 @@ jobs:
           echo "fonte=$fonte" >> "$GITHUB_OUTPUT"
 
       - name: Cadastro mestre (IBGE)
-        run: observatorio coletar ibge | tee -a "$GITHUB_STEP_SUMMARY"
+        run: |
+          set -o pipefail
+          observatorio coletar ibge | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Coletar ${{ steps.alvo.outputs.fonte }}
         if: steps.alvo.outputs.fonte != 'ibge'
@@ -73,6 +75,7 @@ jobs:
           ANOS: ${{ inputs.anos }}
           TODOS: ${{ inputs.todos }}
         run: |
+          set -o pipefail
           args=()
           [ -n "$ANOS" ] && args+=(--anos $ANOS)
           [ "$TODOS" = "true" ] && args+=(--todos)
@@ -80,7 +83,9 @@ jobs:
 
       - name: Conferir Siconfi contra a base 2023-2025
         if: steps.alvo.outputs.fonte == 'siconfi'
-        run: python scripts/validar_siconfi.py | tee -a "$GITHUB_STEP_SUMMARY"
+        run: |
+          set -o pipefail
+          python scripts/validar_siconfi.py | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Guardar a carga como artefato
         if: always()
