@@ -1,0 +1,1 @@
+{"rotas":["meta.json","municipios.json","municipios/{codigo_ibge}.json","municipios_detalhe.json","indicadores.json","status.json","cobertura.json","malha_sp.geojson"]}
