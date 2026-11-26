@@ -344,7 +344,7 @@ async function paginaMunicipio(cod) {
         <h1>${esc(m.municipio)}</h1>
         <div>${m.na_base_amitesp ? '<span class="selo-base ouro">Base AMITESP</span>' : '<span class="selo-base">Fora da base AMITESP</span>'}
           ${m.categoria_turistica ? `<span class="selo-base ouro">${esc(m.categoria_turistica)} · ${nf(m.posicao_ranking)}º de ${nf(m.total_categoria)} no ranking</span>`
-            : E.meta.alesp_fonte_legal ? '<span class="selo-base">Não classificado como município turístico</span>' : ''}
+            : E.meta.alesp_fonte_legal ? '<span class="selo-base" title="Pode ter sido classificado por lei própria ainda não incorporada ao ranking">Fora dos anexos da Lei 17.469/2021</span>' : ''}
           ${m.regiao_turistica ? `<span class="selo-base">Região turística: ${esc(m.regiao_turistica)}</span>` : ''}
           ${m.regiao_imediata ? `<span class="selo-base">Região imediata: ${esc(m.regiao_imediata)}</span>` : ''}</div>
         <div class="kpis">

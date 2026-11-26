@@ -22,7 +22,17 @@ def chave_municipio(nome: str | None) -> str:
         texto = texto.replace(apostrofo, "")
     texto = unicodedata.normalize("NFKD", texto)
     texto = "".join(c for c in texto if not unicodedata.combining(c))
-    return re.sub(r"[^a-z0-9]", "", texto.lower())
+    chave = re.sub(r"[^a-z0-9]", "", texto.lower())
+    return GRAFIAS_ANTIGAS.get(chave, chave)
+
+
+# Grafias que leis e cadastros antigos ainda usam, levadas à grafia do IBGE
+GRAFIAS_ANTIGAS = {
+    "mojimirim": "mogimirim",
+    "mojiguacu": "mogiguacu",
+    "mojidascruzes": "mogidascruzes",
+    "saoluisdoparaitinga": "saoluizdoparaitinga",
+}
 
 
 def nome_coluna(nome: str) -> str:
