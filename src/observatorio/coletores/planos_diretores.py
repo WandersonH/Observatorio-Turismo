@@ -59,7 +59,8 @@ class ColetorPlanosDiretores(Coletor):
         cadastro = cadastro_mestre()
         base = cadastro[cadastro["na_base_amitesp"].astype(bool)]
         cidades = self.get(f"{api}/cities", params={"city_name": ""}).json().get("cities", [])
-        cobertos = {str(c["territory_id"]): c for c in cidades}
+        # A lista traz todas as cidades do país; só as com data de disponibilidade têm diários coletados
+        cobertos = {str(c["territory_id"]): c for c in cidades if c.get("availability_date")}
 
         linhas, mencoes = [], []
         for cod, nome in zip(base["codigo_ibge"], base["municipio"]):
