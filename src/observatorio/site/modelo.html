@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Observatório de Turismo da AMITESP</title>
+<style>
+:root{
+  --ouro:#B8962E;--ouro-escuro:#8A6D1B;--marrom:#4A2A26;--vermelho:#C8442F;--bege:#EFE6D2;
+  --creme:#FAF7F0;--painel:#FFFFFF;--texto:#2B2420;--muted:#6F6259;--borda:#E6DECD;--verde:#3E7A4A;
+  --c1:#F3E9CF;--c2:#E2C98A;--c3:#C9A24A;--c4:#9C7428;--c5:#5C3B1E;--semdado:#E9E6E0;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Montserrat,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--texto);background:var(--creme);line-height:1.45}
+a{color:var(--ouro-escuro)}
+header.topo{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--borda)}
+.topo .in{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:24px;padding:12px 24px}
+.marca{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--marrom)}
+.marca .selo{width:34px;height:34px;border-radius:50%;background:conic-gradient(var(--vermelho) 0 25%,var(--ouro) 0 60%,var(--marrom) 0 100%);flex:none}
+.marca b{display:block;font-size:15px;letter-spacing:.02em}
+.marca small{display:block;font-size:11px;color:var(--muted)}
+nav.menu{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+nav.menu a{text-decoration:none;color:var(--texto);font-size:14px;padding:8px 12px;border-radius:8px}
+nav.menu a.ativo,nav.menu a:hover{background:var(--bege);color:var(--marrom)}
+main{max-width:1240px;margin:0 auto;padding:24px}
+.hero{display:grid;grid-template-columns:minmax(320px,5fr) 7fr;gap:32px;align-items:start}
+.sobretitulo{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ouro-escuro)}
+h1{font-size:40px;line-height:1.1;margin:8px 0 12px;color:var(--marrom)}
+h2{font-size:22px;margin:0 0 12px;color:var(--marrom)}
+h3{font-size:15px;margin:0 0 10px;color:var(--marrom)}
+.sub{color:var(--muted);font-size:16px;margin:0 0 20px}
+.busca{display:flex;gap:8px;background:#fff;border:1px solid var(--borda);border-radius:999px;padding:6px 6px 6px 18px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.busca input{flex:1;border:0;outline:0;font:inherit;font-size:15px;background:transparent}
+.botao{border:0;border-radius:999px;background:var(--ouro);color:#fff;font:inherit;font-weight:600;padding:9px 18px;cursor:pointer}
+.botao:hover{background:var(--ouro-escuro)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0}
+.chip{border:1px solid var(--borda);background:#fff;border-radius:999px;padding:5px 12px;font-size:13px;text-decoration:none;color:var(--texto)}
+.chip:hover{border-color:var(--ouro)}
+.cartao{background:var(--painel);border:1px solid var(--borda);border-radius:14px;padding:18px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:20px 0}
+.kpi{background:#fff;border:1px solid var(--borda);border-radius:12px;padding:14px}
+.kpi .v{font-size:26px;font-weight:700;color:var(--marrom)}
+.kpi .r{font-size:12px;color:var(--muted)}
+.kpi .n{font-size:11px;color:var(--muted);margin-top:6px}
+.kpi.vazio .v{color:#B9B0A4;font-size:18px}
+.controles{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+select{font:inherit;font-size:14px;border:1px solid var(--borda);border-radius:8px;padding:7px 10px;background:#fff;max-width:100%}
+label.alternar{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.mapa svg{width:100%;height:auto;display:block}
+.mapa path{stroke:#fff;stroke-width:.35;cursor:pointer;vector-effect:non-scaling-stroke}
+.mapa path.base{stroke:var(--marrom);stroke-width:.9}
+.mapa path.esmaecido{opacity:.22}
+.mapa path.destaque{stroke:var(--vermelho);stroke-width:2.2}
+.mapa path:hover{stroke:var(--texto);stroke-width:1.6}
+.legenda{display:flex;gap:4px;align-items:center;font-size:11px;color:var(--muted);margin-top:8px;flex-wrap:wrap}
+.legenda i{display:inline-block;width:26px;height:10px;border-radius:2px}
+#dica{position:fixed;pointer-events:none;background:var(--marrom);color:#fff;font-size:12px;padding:6px 9px;border-radius:6px;display:none;z-index:20;max-width:260px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--borda);padding:8px 6px;cursor:pointer;white-space:nowrap}
+td{border-bottom:1px solid #F1ECE2;padding:8px 6px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr:hover td{background:#FCFAF5}
+.grade2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+.barras .linha{display:grid;grid-template-columns:minmax(110px,34%) 1fr 118px;gap:8px;align-items:center;font-size:13px;margin:5px 0}
+.barras .trilho{background:#F4EFE4;border-radius:4px;height:12px;overflow:hidden}
+.barras .cheio{background:var(--ouro);height:100%}
+.barras .valor{text-align:right;font-variant-numeric:tabular-nums}
+.selo-base{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;margin:0 6px 6px 0;background:var(--bege);color:var(--marrom)}
+.selo-base.ouro{background:var(--ouro);color:#fff}
+.situacao{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.s-rodou{background:#E3F0E5;color:var(--verde)}
+.s-falhou{background:#FBE4DF;color:var(--vermelho)}
+.s-nao_implementado{background:#EFECE6;color:#7A7066}
+.s-aguarda_decisao{background:#FFF1D1;color:#8A6400}
+.s-nao_executado{background:#EFECE6;color:#7A7066}
+.pendentes{display:flex;flex-wrap:wrap;gap:8px}
+.pendentes span{font-size:12px;border:1px dashed #C9BFAE;color:var(--muted);border-radius:8px;padding:5px 10px}
+.nota{font-size:12px;color:var(--muted)}
+.aviso{background:#FFF7E3;border:1px solid #F0DDA8;border-radius:10px;padding:10px 14px;font-size:13px;margin:12px 0}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+pre{background:#fff;border:1px solid var(--borda);border-radius:10px;padding:12px;overflow:auto}
+footer{border-top:1px solid var(--borda);margin-top:40px;background:#fff}
+footer .in{max-width:1240px;margin:0 auto;padding:18px 24px;font-size:12px;color:var(--muted);display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
+@media (max-width:900px){.hero,.grade2{grid-template-columns:1fr}h1{font-size:30px}}
+</style>
+</head>
+<body>
+<header class="topo"><div class="in">
+  <a class="marca" href="#/"><span class="selo"></span><span><b>AMITESP</b><small>Observatório de Turismo</small></span></a>
+  <nav class="menu">
+    <a href="#/" data-r="">Mapa</a>
+    <a href="#/municipios" data-r="municipios">Municípios</a>
+    <a href="#/fontes" data-r="fontes">Fontes e cobertura</a>
+    <a href="#/api" data-r="api">API</a>
+    <a href="#/sobre" data-r="sobre">Sobre</a>
+  </nav>
+</div></header>
+<main id="app"><p class="nota">Carregando dados…</p></main>
+<div id="dica"></div>
+<footer><div class="in">
+  <span>Realização: AMITESP · EACH-USP. Dados públicos coletados automaticamente.</span>
+  <span id="rodape-coleta"></span>
+</div></footer>
+<script>
+const API = 'api/v1/';
+const E = {munis: [], porCod: {}, ind: [], status: null, cobertura: [], meta: {}, malha: null,
+           indAtual: 'hosp_10k', soBase: false, ordem: null};
+const nf = (v, casas = 0) => v == null || Number.isNaN(v) ? '–'
+  : new Intl.NumberFormat('pt-BR', {minimumFractionDigits: casas, maximumFractionDigits: casas}).format(v);
+const moeda = v => v == null ? '–' : new Intl.NumberFormat('pt-BR', {style: 'currency', currency: 'BRL', maximumFractionDigits: 0}).format(v);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+const app = document.getElementById('app');
+const dica = document.getElementById('dica');
+const SITUACAO = {rodou: 'Rodou', falhou: 'Falhou', nao_implementado: 'Não implementado',
+                  aguarda_decisao: 'Aguarda decisão do convênio', nao_executado: 'Não executado'};
+const CORES = ['--c1', '--c2', '--c3', '--c4', '--c5'].map(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim());
+
+async function obter(caminho) {
+  const r = await fetch(API + caminho);
+  if (!r.ok) throw new Error(caminho + ': ' + r.status);
+  return r.json();
+}
+
+async function iniciar() {
+  try {
+    [E.munis, E.ind, E.status, E.cobertura, E.meta] = await Promise.all(
+      ['municipios.json', 'indicadores.json', 'status.json', 'cobertura.json', 'meta.json'].map(obter));
+  } catch (erro) {
+    app.innerHTML = `<div class="aviso">Não foi possível carregar os dados (${esc(erro.message)}).</div>`;
+    return;
+  }
+  E.munis.forEach(m => E.porCod[m.cod] = m);
+  if (!E.ind.find(i => i.id === E.indAtual) && E.ind.length) E.indAtual = E.ind[0].id;
+  obter('malha_sp.geojson').then(g => { E.malha = g; desenharMapasPendentes(); }).catch(() => {});
+  document.getElementById('rodape-coleta').textContent = E.meta.data_coleta ? `Última coleta: ${dataBR(E.meta.data_coleta)}` : '';
+  window.addEventListener('hashchange', rotear);
+  rotear();
+}
+
+function dataBR(iso) { if (!iso) return '–'; const [a, m, d] = iso.split('-'); return `${d}/${m}/${a}`; }
+function indicador(id) { return E.ind.find(i => i.id === id) || {}; }
+function fmtInd(id, v) {
+  if (v == null) return '–';
+  if (id === 'tur_pc') return 'R$ ' + nf(v, 2);
+  if (id === 'tur_part') return nf(v, 2) + '%';
+  return nf(v, indicador(id).casas ?? 1);
+}
+function pendentes() { return (E.status?.fontes || []).filter(f => f.situacao !== 'rodou'); }
+
+function rotear() {
+  const [rota, arg] = location.hash.replace(/^#\/?/, '').split('/');
+  document.querySelectorAll('nav.menu a').forEach(a => a.classList.toggle('ativo', a.dataset.r === (rota || '')));
+  window.scrollTo(0, 0);
+  if (rota === 'municipio' && arg) return paginaMunicipio(arg);
+  if (rota === 'municipios') return paginaMunicipios();
+  if (rota === 'fontes') return paginaFontes();
+  if (rota === 'api') return paginaAPI();
+  if (rota === 'sobre') return paginaSobre();
+  return paginaInicio();
+}
+
+/* ---------- mapa ---------- */
+let mapasPendentes = [];
+function desenharMapasPendentes() { const p = mapasPendentes; mapasPendentes = []; p.forEach(f => f()); }
+
+function classes(valores) {
+  const v = valores.filter(x => x != null && !Number.isNaN(x)).sort((a, b) => a - b);
+  if (!v.length) return [];
+  return [0.2, 0.4, 0.6, 0.8].map(q => v[Math.min(v.length - 1, Math.floor(q * v.length))]);
+}
+function corDe(v, limites) {
+  if (v == null || Number.isNaN(v)) return 'var(--semdado)';
+  let i = 0; while (i < limites.length && v > limites[i]) i++;
+  return CORES[i];
+}
+
+function desenharMapa(alvo, opcoes) {
+  if (!E.malha) { alvo.innerHTML = '<p class="nota">Carregando o mapa…</p>'; mapasPendentes.push(() => desenharMapa(alvo, opcoes)); return; }
+  const {valor, destaque, soBase, aoClicar, limites} = opcoes;
+  let x0 = 180, x1 = -180, y0 = 90, y1 = -90;
+  const varrer = c => c.forEach(([x, y]) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); });
+  E.malha.features.forEach(f => (f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates).forEach(p => p.forEach(varrer)));
+  const k = Math.cos((y0 + y1) / 2 * Math.PI / 180), L = 1000, esc_ = L / ((x1 - x0) * k), A = (y1 - y0) * esc_;
+  const px = ([x, y]) => `${((x - x0) * k * esc_).toFixed(1)},${((y1 - y) * esc_).toFixed(1)}`;
+  const caminho = g => (g.type === 'Polygon' ? [g.coordinates] : g.coordinates)
+    .map(p => p.map(a => 'M' + a.map(px).join('L') + 'Z').join('')).join('');
+  const partes = E.malha.features.map(f => {
+    const cod = f.properties.cod, m = E.porCod[cod] || {}, v = valor(m);
+    const cls = [m.na_base_amitesp ? 'base' : '', soBase && !m.na_base_amitesp ? 'esmaecido' : '', destaque === cod ? 'destaque' : ''].join(' ');
+    return `<path d="${caminho(f.geometry)}" fill="${corDe(v, limites)}" class="${cls}" data-cod="${cod}"></path>`;
+  });
+  if (destaque) { const i = partes.findIndex(p => p.includes('destaque')); if (i >= 0) partes.push(partes.splice(i, 1)[0]); }
+  alvo.innerHTML = `<svg viewBox="0 0 ${L} ${A.toFixed(0)}" role="img" aria-label="Mapa dos municípios de São Paulo">${partes.join('')}</svg>`;
+  alvo.querySelectorAll('path').forEach(p => {
+    const m = E.porCod[p.dataset.cod];
+    p.addEventListener('mousemove', ev => {
+      if (!m) return;
+      dica.style.display = 'block'; dica.style.left = ev.clientX + 12 + 'px'; dica.style.top = ev.clientY + 12 + 'px';
+      dica.innerHTML = `<b>${esc(m.municipio)}</b>${m.na_base_amitesp ? ' · base AMITESP' : ''}<br>${esc(opcoes.rotulo)}: ${opcoes.formatar(valor(m))}`;
+    });
+    p.addEventListener('mouseleave', () => dica.style.display = 'none');
+    p.addEventListener('click', () => { dica.style.display = 'none'; aoClicar && aoClicar(p.dataset.cod); });
+  });
+}
+
+function legenda(limites, formatar) {
+  if (!limites.length) return '<div class="legenda">Sem dados para este indicador.</div>';
+  const rot = [`até ${formatar(limites[0])}`, ...limites.slice(1).map((l, i) => `${formatar(limites[i])} a ${formatar(l)}`), `acima de ${formatar(limites[3])}`];
+  return `<div class="legenda">${CORES.map((c, i) => `<i style="background:${c}"></i>${esc(rot[i])}`).join(' ')} <i style="background:var(--semdado)"></i>sem dado · contorno escuro: base AMITESP</div>`;
+}
+
+/* ---------- páginas ---------- */
+function opcoesIndicador() {
+  return E.ind.map(i => `<option value="${i.id}" ${i.id === E.indAtual ? 'selected' : ''}>${esc(i.nome)}</option>`).join('');
+}
+
+function paginaInicio() {
+  const base = E.munis.filter(m => m.na_base_amitesp);
+  const destaques = [...base].sort((a, b) => (b.hosp || 0) - (a.hosp || 0)).slice(0, 5);
+  const rodou = (E.status?.fontes || []).filter(f => f.situacao === 'rodou').length;
+  const total = (E.status?.fontes || []).length;
+  const cadastur = E.munis.reduce((s, m) => s + (m.cadastur_total || 0), 0);
+  app.innerHTML = `
+  <section class="hero">
+    <div>
+      <div class="sobretitulo">Municípios de Interesse Turístico de SP</div>
+      <h1>O turismo de cada município paulista, em dados abertos</h1>
+      <p class="sub">Indicadores coletados automaticamente de fontes públicas, com universo e amostra declarados em cada coleta.</p>
+      <form class="busca" id="form-busca">
+        <input id="campo-busca" list="lista-municipios" placeholder="Digite o nome do município" autocomplete="off">
+        <button class="botao">Ver</button>
+      </form>
+      <datalist id="lista-municipios">${E.munis.map(m => `<option value="${esc(m.municipio)}">`).join('')}</datalist>
+      <div class="chips">${destaques.map(m => `<a class="chip" href="#/municipio/${m.cod}">${esc(m.municipio)}</a>`).join('')}</div>
+      <div class="kpis">
+        <div class="kpi"><div class="v">${nf(base.length)}</div><div class="r">municípios na base AMITESP</div><div class="n">de ${nf(E.munis.length)} em SP</div></div>
+        <div class="kpi"><div class="v">${nf(cadastur)}</div><div class="r">prestadores no Cadastur em SP</div><div class="n">${esc(E.meta.periodo_cadastur || '')}</div></div>
+        <div class="kpi"><div class="v">${rodou}/${total}</div><div class="r">fontes coletadas</div><div class="n"><a href="#/fontes">ver o que falta</a></div></div>
+      </div>
+    </div>
+    <div class="cartao">
+      <div class="controles">
+        <select id="sel-ind" aria-label="Indicador do mapa">${opcoesIndicador()}</select>
+        <label class="alternar"><input type="checkbox" id="so-base" ${E.soBase ? 'checked' : ''}> destacar só a base AMITESP</label>
+      </div>
+      <div class="mapa" id="mapa"></div>
+      <div id="legenda"></div>
+      <div class="nota" id="fonte-ind"></div>
+    </div>
+  </section>
+  <section class="cartao" style="margin-top:20px">
+    <h2 id="titulo-ranking"></h2>
+    <div id="ranking"></div>
+    <p class="nota"><a href="#/municipios">Ver todos os municípios</a></p>
+  </section>`;
+  document.getElementById('form-busca').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const nome = document.getElementById('campo-busca').value.trim().toLowerCase();
+    const m = E.munis.find(x => x.municipio.toLowerCase() === nome) || E.munis.find(x => x.municipio.toLowerCase().startsWith(nome));
+    if (m) location.hash = '#/municipio/' + m.cod;
+  });
+  document.getElementById('sel-ind').addEventListener('change', ev => { E.indAtual = ev.target.value; atualizarInicio(); });
+  document.getElementById('so-base').addEventListener('change', ev => { E.soBase = ev.target.checked; atualizarInicio(); });
+  atualizarInicio();
+}
+
+function atualizarInicio() {
+  const ind = indicador(E.indAtual), id = ind.id;
+  const universo = E.soBase ? E.munis.filter(m => m.na_base_amitesp) : E.munis;
+  const limites = classes(universo.map(m => m[id]));
+  const formatar = v => fmtInd(id, v);
+  desenharMapa(document.getElementById('mapa'), {valor: m => m[id], soBase: E.soBase, limites, formatar, rotulo: ind.curto,
+    aoClicar: cod => location.hash = '#/municipio/' + cod});
+  document.getElementById('legenda').innerHTML = legenda(limites, formatar);
+  const fonte = (E.status?.fontes || []).find(f => f.id === ind.fonte);
+  document.getElementById('fonte-ind').textContent = `Fonte: ${fonte?.nome || ind.fonte}. ${ind.n_base ?? 0} de ${E.meta.municipios_base} municípios da base com dado; mediana da base: ${formatar(ind.mediana_base)}.`;
+  document.getElementById('titulo-ranking').textContent = `Base AMITESP: ${ind.nome}`;
+  const lista = E.munis.filter(m => m.na_base_amitesp && m[id] != null).sort((a, b) => b[id] - a[id]).slice(0, 15);
+  document.getElementById('ranking').innerHTML = `<table><thead><tr><th>#</th><th>Município</th><th>Região turística</th><th class="num">${esc(ind.curto)}</th></tr></thead>
+    <tbody>${lista.map((m, i) => `<tr><td>${i + 1}</td><td><a href="#/municipio/${m.cod}">${esc(m.municipio)}</a></td><td>${esc(m.regiao_turistica || '')}</td><td class="num">${formatar(m[id])}</td></tr>`).join('')}</tbody></table>`;
+}
+
+async function paginaMunicipio(cod) {
+  const m0 = E.porCod[cod];
+  if (!m0) { app.innerHTML = '<div class="aviso">Município não encontrado.</div>'; return; }
+  app.innerHTML = '<p class="nota">Carregando…</p>';
+  let m;
+  try { m = await obter(`municipios/${cod}.json`); } catch { m = m0; }
+  const ultimo = (m.siconfi || []).filter(s => s.ano === E.meta.ano_siconfi)[0];
+  const posBase = id => m[`pos_base_${id}`] ? `${nf(m['pos_base_' + id])}º de ${indicador(id).n_base} na base` : '';
+  const kpi = (rotulo, valor, nota, vazio) => `<div class="kpi ${vazio ? 'vazio' : ''}"><div class="v">${valor}</div><div class="r">${rotulo}</div><div class="n">${nota || ''}</div></div>`;
+  const temCadastur = (E.status?.fontes || []).some(f => f.id === 'cadastur' && f.situacao === 'rodou');
+  const turismo = ultimo == null ? kpi(`despesa em turismo (${E.meta.ano_siconfi || '–'})`, 'sem DCA', 'nenhuma DCA deste ano no Siconfi', true)
+    : ultimo.turismo == null ? kpi(`despesa em turismo (${ultimo.ano})`, 'não declarada', 'nenhum valor na subfunção 695 da DCA', true)
+    : kpi(`despesa em turismo por habitante (${ultimo.ano})`, 'R$ ' + nf(ultimo.per_capita, 2), `${moeda(ultimo.turismo)} · ${nf(ultimo.participacao * 100, 2)}% da despesa · ${posBase('tur_pc')}`);
+  const cats = m.cadastur?.categorias || [];
+  const maxCat = Math.max(1, ...cats.map(c => c.estabelecimentos || 0));
+  const serie = m.siconfi || [];
+  const maxSerie = Math.max(1, ...serie.map(s => s.turismo || 0));
+  const comparar = E.ind.filter(i => i.id !== 'pop');
+  const faltando = pendentes();
+  app.innerHTML = `
+    <p class="nota"><a href="#/">Mapa</a> › ${esc(m.municipio)}</p>
+    <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start" class="cab-mun">
+      <div>
+        <h1>${esc(m.municipio)}</h1>
+        <div>${m.na_base_amitesp ? '<span class="selo-base ouro">Base AMITESP</span>' : '<span class="selo-base">Fora da base AMITESP</span>'}
+          ${m.regiao_turistica ? `<span class="selo-base">Região turística: ${esc(m.regiao_turistica)}</span>` : ''}
+          ${m.regiao_imediata ? `<span class="selo-base">Região imediata: ${esc(m.regiao_imediata)}</span>` : ''}</div>
+        <div class="kpis">
+          ${kpi('habitantes', nf(m.populacao), `IBGE ${esc(m.ano_populacao || '')}`)}
+          ${temCadastur ? kpi('meios de hospedagem no Cadastur', nf(m.hosp), `${fmtInd('hosp_10k', m.hosp_10k)} por 10 mil hab. · ${posBase('hosp_10k')}`)
+                        : kpi('meios de hospedagem', 'sem coleta', 'Cadastur não rodou', true)}
+          ${temCadastur ? kpi('prestadores turísticos formais', nf(m.cadastur_total), `${fmtInd('cad_10k', m.cad_10k)} por 10 mil hab. · ${posBase('cad_10k')}`) : ''}
+          ${turismo}
+        </div>
+      </div>
+      <div class="cartao"><div class="mapa" id="mapa-mun"></div><p class="nota">Localização no estado</p></div>
+    </div>
+    <div class="grade2">
+      <section class="cartao barras">
+        <h3>Prestadores no Cadastur por categoria</h3>
+        ${cats.length ? cats.map(c => `<div class="linha"><span>${esc(c.categoria)}</span><span class="trilho"><span class="cheio" style="display:block;width:${(c.estabelecimentos || 0) / maxCat * 100}%"></span></span><span class="valor">${nf(c.estabelecimentos)}</span></div>`).join('')
+          : '<p class="nota">Nenhum prestador registrado no Cadastur.</p>'}
+        <p class="nota">Fonte: Cadastur (MTur), arquivo ${esc(m.cadastur?.periodo || '–')}. Só prestadores formais; guias de turismo não entram.</p>
+      </section>
+      <section class="cartao barras">
+        <h3>Despesa empenhada em turismo</h3>
+        ${serie.length ? serie.map(s => `<div class="linha"><span>${s.ano}</span><span class="trilho"><span class="cheio" style="display:block;width:${(s.turismo || 0) / maxSerie * 100}%"></span></span><span class="valor">${s.turismo == null ? 'não declarada' : moeda(s.turismo)}</span></div>`).join('')
+          : '<p class="nota">Siconfi não consultado para este município.</p>'}
+        <p class="nota">Fonte: Siconfi (Tesouro Nacional), DCA Anexo I-E, subfunção 23.695. "Não declarada" é diferente de zero.</p>
+      </section>
+    </div>
+    <section class="cartao">
+      <h3>Comparação</h3>
+      <table><thead><tr><th>Indicador</th><th class="num">${esc(m.municipio)}</th><th class="num">Mediana da base</th><th class="num">Mediana de SP</th><th class="num">Posição na base</th></tr></thead>
+      <tbody>${comparar.map(i => `<tr><td>${esc(i.nome)}</td><td class="num">${fmtInd(i.id, m[i.id])}</td><td class="num">${fmtInd(i.id, i.mediana_base)}</td><td class="num">${fmtInd(i.id, i.mediana_sp)}</td><td class="num">${m['pos_base_' + i.id] ? nf(m['pos_base_' + i.id]) + 'º de ' + i.n_base : '–'}</td></tr>`).join('')}</tbody></table>
+    </section>
+    <section class="cartao" style="margin-top:16px">
+      <h3>Ainda não coletado</h3>
+      <div class="pendentes">${faltando.map(f => `<span title="${esc(SITUACAO[f.situacao])}">${esc(f.nome || f.id)} · ${esc(SITUACAO[f.situacao])}</span>`).join('') || '<span>Todas as fontes rodaram.</span>'}</div>
+      <p class="nota">Detalhes em <a href="#/fontes">Fontes e cobertura</a>.</p>
+    </section>`;
+  const formatar = v => fmtInd('hosp_10k', v);
+  desenharMapa(document.getElementById('mapa-mun'), {valor: x => x.na_base_amitesp ? 1 : null, destaque: cod, limites: [0, 0, 0, 0],
+    formatar: v => v ? 'base AMITESP' : 'fora da base', rotulo: 'Situação', aoClicar: c => location.hash = '#/municipio/' + c});
+}
+
+function paginaMunicipios() {
+  const colunas = [['municipio', 'Município'], ['regiao_turistica', 'Região turística'], ['populacao', 'População'],
+    ['hosp', 'Hospedagem'], ['hosp_10k', 'Hosp. / 10 mil'], ['cadastur_total', 'Prestadores'], ['tur_pc', 'Turismo R$/hab.']]
+    .filter(([c]) => E.munis.some(m => m[c] != null));
+  app.innerHTML = `<h2>Municípios</h2>
+    <div class="controles"><input id="filtro" placeholder="Filtrar por nome" style="font:inherit;padding:7px 10px;border:1px solid var(--borda);border-radius:8px">
+    <label class="alternar"><input type="checkbox" id="so-base-tab" checked> só a base AMITESP</label></div>
+    <div class="cartao" style="overflow:auto"><table id="tab-mun"></table></div>`;
+  let ordem = 'municipio', desc = false;
+  const desenhar = () => {
+    const filtro = document.getElementById('filtro').value.toLowerCase(), so = document.getElementById('so-base-tab').checked;
+    const lista = E.munis.filter(m => (!so || m.na_base_amitesp) && m.municipio.toLowerCase().includes(filtro))
+      .sort((a, b) => { const x = a[ordem], y = b[ordem]; if (x == null) return 1; if (y == null) return -1; return (typeof x === 'string' ? x.localeCompare(y) : x - y) * (desc ? -1 : 1); });
+    const fmt = (c, v) => ['municipio', 'regiao_turistica'].includes(c) ? esc(v || '') : c === 'tur_pc' ? (v == null ? '–' : 'R$ ' + nf(v, 2)) : c === 'hosp_10k' ? nf(v, 1) : nf(v);
+    document.getElementById('tab-mun').innerHTML = `<thead><tr>${colunas.map(([c, r]) => `<th data-c="${c}" class="${['municipio', 'regiao_turistica'].includes(c) ? '' : 'num'}">${r}${ordem === c ? (desc ? ' ▼' : ' ▲') : ''}</th>`).join('')}</tr></thead>
+      <tbody>${lista.map(m => `<tr>${colunas.map(([c]) => c === 'municipio' ? `<td><a href="#/municipio/${m.cod}">${esc(m.municipio)}</a></td>` : `<td class="${c === 'regiao_turistica' ? '' : 'num'}">${fmt(c, m[c])}</td>`).join('')}</tr>`).join('')}</tbody>`;
+    document.querySelectorAll('#tab-mun th').forEach(th => th.addEventListener('click', () => { desc = ordem === th.dataset.c ? !desc : th.dataset.c !== 'municipio'; ordem = th.dataset.c; desenhar(); }));
+  };
+  document.getElementById('filtro').addEventListener('input', desenhar);
+  document.getElementById('so-base-tab').addEventListener('change', desenhar);
+  desenhar();
+}
+
+function paginaFontes() {
+  const fontes = E.status?.fontes || [];
+  const conta = s => fontes.filter(f => f.situacao === s).length;
+  app.innerHTML = `<h2>Fontes e cobertura</h2>
+    <p class="sub">O que rodou na última coleta (${dataBR(E.status?.data_coleta)}), com universo e amostra lida, e o que ainda não roda.</p>
+    <div class="kpis">
+      <div class="kpi"><div class="v">${conta('rodou')}</div><div class="r"><span class="situacao s-rodou">Rodou</span></div></div>
+      <div class="kpi"><div class="v">${conta('falhou')}</div><div class="r"><span class="situacao s-falhou">Falhou</span></div></div>
+      <div class="kpi"><div class="v">${conta('nao_implementado')}</div><div class="r"><span class="situacao s-nao_implementado">Não implementado</span></div></div>
+      <div class="kpi"><div class="v">${conta('aguarda_decisao')}</div><div class="r"><span class="situacao s-aguarda_decisao">Aguarda decisão</span></div></div>
+    </div>
+    <div class="cartao" style="overflow:auto"><table><thead><tr><th>Fonte</th><th>Situação</th><th>Frequência</th><th>Cobertura da última coleta</th></tr></thead><tbody>
+    ${fontes.map(f => `<tr><td><b>${esc(f.nome || f.id)}</b><div class="nota">${esc([].concat(f.eixo || []).join(', '))}${f.repositorio === 'privado' ? ' · repositório privado' : ''}</div></td>
+      <td><span class="situacao s-${f.situacao}">${SITUACAO[f.situacao] || f.situacao}</span>${f.duracao_s ? `<div class="nota">${nf(f.duracao_s)} s</div>` : ''}</td>
+      <td>${esc(f.frequencia || '')}</td>
+      <td>${f.situacao === 'falhou' ? `<span class="nota" style="color:var(--vermelho)">${esc(f.erro)}</span>`
+        : (f.coberturas || []).map(c => `<div><b>${nf(c.amostra)}</b> de ${nf(c.universo)} ${esc(c.unidade)}${c.taxa != null ? ` (${nf(c.taxa * 100, 1)}%)` : ''}${c.municipios_esperados ? ` · ${nf(c.municipios_com_dado)}/${nf(c.municipios_esperados)} municípios da base` : ''} <span class="nota">${esc(c.tabela)}</span></div>`).join('') || `<span class="nota">${esc(f.observacao || '')}</span>`}</td></tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+function paginaAPI() {
+  const exemplo = E.munis.find(m => m.na_base_amitesp)?.cod || '3550308';
+  const rotas = [
+    ['meta.json', 'Data da última coleta, período do Cadastur, ano do Siconfi, contagens.'],
+    ['municipios.json', 'Os 645 municípios de SP com os indicadores-resumo e posições.'],
+    [`municipios/${exemplo}.json`, 'Um município: resumo, categorias do Cadastur e série do Siconfi.'],
+    ['indicadores.json', 'Definição de cada indicador, unidade, fonte e medianas.'],
+    ['status.json', 'O que rodou, falhou ou ainda não existe em cada fonte.'],
+    ['cobertura.json', 'Universo e amostra de cada tabela da última coleta.'],
+    ['malha_sp.geojson', 'Limites municipais simplificados (IBGE).'],
+  ];
+  app.innerHTML = `<h2>API</h2>
+    <p class="sub">Arquivos JSON gerados a cada coleta, servidos junto com o site. Basta uma requisição GET; não há chave.</p>
+    <div class="cartao"><table><thead><tr><th>Rota</th><th>Conteúdo</th></tr></thead><tbody>
+    ${rotas.map(([r, d]) => `<tr><td><a href="${API}${r}" target="_blank"><code>api/v1/${esc(r)}</code></a></td><td>${esc(d)}</td></tr>`).join('')}</tbody></table></div>
+    <h3 style="margin-top:20px">Exemplo</h3>
+    <pre>fetch('api/v1/municipios/${exemplo}.json').then(r =&gt; r.json())</pre>
+    <p class="nota">Inspirada na API do UrbVerde (IAU-USP), que serve camadas por PostGIS e pg_tileserv. Enquanto o observatório só publica indicadores por município, arquivos estáticos bastam; o mesmo esquema migra para um banco espacial quando houver dados por setor censitário.</p>`;
+}
+
+function paginaSobre() {
+  app.innerHTML = `<h2>Sobre</h2>
+    <div class="cartao">
+      <p>O Observatório de Turismo da AMITESP é resultado do convênio entre a Associação das Prefeituras dos Municípios de Interesse Turístico do Estado de São Paulo e a Escola de Artes, Ciências e Humanidades da USP (EACH-USP).</p>
+      <p>Esta versão transforma o retrato de 2023 a 2025 em séries atualizadas automaticamente. Os princípios:</p>
+      <ul>
+        <li><b>Universo e amostra em toda coleta.</b> Cada indicador diz quantos casos a fonte tinha e quantos foram lidos.</li>
+        <li><b>Ausente não é zero.</b> "Não declarado" aparece como tal e fica fora das médias.</li>
+        <li><b>Nada é sobrescrito.</b> Cada coleta é uma fotografia datada.</li>
+        <li><b>Só indicadores agregados são publicados.</b> Nenhum dado de estabelecimento, pessoa ou entrevistado.</li>
+      </ul>
+      <p>Código e metodologia: <a href="${esc(E.meta.repositorio)}" target="_blank">${esc(E.meta.repositorio)}</a></p>
+    </div>`;
+}
+
+iniciar();
+</script>
+</body>
+</html>

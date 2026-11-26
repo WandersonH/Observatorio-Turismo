@@ -50,26 +50,33 @@ class ColetorSiconfi(Coletor):
             offset += resposta.get("limit") or len(resposta.get("items", []))
             time.sleep(PAUSA_SEGUNDOS)
 
-    def coletar(self, anos: list[int] | None = None, todos: bool = False, **_) -> Resultado:
+    def coletar(self, anos: list[int] | None = None, todos: bool = False,
+                anos_contexto: list[int] | None = None, **_) -> Resultado:
+        """Base AMITESP em todos os `anos`; com `todos`, os demais municípios de SP em
+        `anos_contexto` (padrão: os mesmos anos), que servem de grupo de comparação."""
         anos = [int(a) for a in (anos or anos_padrao())]
         cadastro = cadastro_mestre()
-        alvo = cadastro if todos else cadastro[cadastro["na_base_amitesp"].astype(bool)]
+        na_base = cadastro["na_base_amitesp"].astype(bool)
+        pares = [(c, a) for c in cadastro.loc[na_base, "codigo_ibge"] for a in anos]
+        if todos:
+            anos_fora = [int(a) for a in (anos_contexto or anos)]
+            pares += [(c, a) for c in cadastro.loc[~na_base, "codigo_ibge"] for a in anos_fora]
+        alvo = cadastro if todos else cadastro[na_base]
 
         linhas, falhas = [], []
-        for codigo in alvo["codigo_ibge"]:
-            for ano in anos:
-                try:
-                    linhas.extend(self._dca(str(codigo), ano))
-                except Exception as erro:  # um município fora do ar não derruba a coleta
-                    falhas.append(f"{codigo}/{ano}: {erro}")
-                time.sleep(PAUSA_SEGUNDOS)
+        for codigo, ano in pares:
+            try:
+                linhas.extend(self._dca(str(codigo), ano))
+            except Exception as erro:  # um município fora do ar não derruba a coleta
+                falhas.append(f"{codigo}/{ano}: {erro}")
+            time.sleep(PAUSA_SEGUNDOS)
 
         bruto = pd.DataFrame(linhas)
         if bruto.empty:
             raise RuntimeError(f"Siconfi não devolveu dados ({len(falhas)} falhas)")
         tratado = despesas_turismo(bruto, cadastro)
 
-        esperados = len(alvo) * len(anos)
+        esperados = len(pares)
         com_turismo = tratado["turismo_empenhado"].notna()
         coberturas = [Cobertura(
             fonte=self.fonte,

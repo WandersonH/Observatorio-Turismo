@@ -9,7 +9,7 @@ Os coletores leem fontes públicas e plataformas, ligam cada registro ao municí
 - **Universo e amostra em toda coleta.** Cada execução grava quantos casos a fonte reporta e quantos foram de fato lidos (`data/cobertura/`).
 - **Ausente não é zero.** Resposta em branco, "não informado" e "resposta inválida" ficam fora das médias (`observatorio.qualidade`).
 - **Nada é sobrescrito.** Cada carga é uma fotografia datada; a série histórica sai das próprias cargas.
-- **Nenhum dado no Git.** Dados ficam no BigQuery e nos artefatos do Actions; chaves ficam nos segredos do repositório.
+- **Nenhum dado bruto no Git.** Cargas ficam no BigQuery e nos artefatos do Actions; chaves ficam nos segredos do repositório. O ramo `gh-pages` recebe só indicadores agregados por município.
 
 ## Coletores
 
@@ -36,6 +36,9 @@ observatorio coletar ibge          # cadastro mestre; os outros coletores depend
 observatorio coletar cadastur
 observatorio coletar siconfi --anos 2023 2024 2025
 python scripts/validar_siconfi.py  # confere contra a base 2023-2025
+observatorio rodar-tudo            # todas as fontes; o que falha não interrompe as outras
+observatorio site --saida _site    # site e API estática
+python -m http.server -d _site     # abre em http://localhost:8000
 pytest -q
 ```
 
@@ -54,13 +57,21 @@ Para gravar no BigQuery, configure no repositório:
 
 As tabelas são criadas nos datasets `obs_bruto`, `obs_tratado` e `obs_cobertura`.
 
+## Site e API
+
+O workflow **Site** roda todo dia 12 (e pela aba Actions): executa `rodar-tudo`, gera o site e publica no ramo `gh-pages`. Para servir pelo GitHub Pages, ative em Settings → Pages → Branch `gh-pages`.
+
+O site tem mapa coroplético dos 645 municípios, página de cada município, tabela comparável e a página **Fontes e cobertura**, que mostra o que rodou, o que falhou (com o erro) e o que ainda não foi implementado ou aguarda decisão do convênio, sempre com universo e amostra.
+
+A API é estática, em `api/v1/`: `meta.json`, `municipios.json`, `municipios/{codigo_ibge}.json`, `indicadores.json`, `status.json`, `cobertura.json` e `malha_sp.geojson`. A organização segue a da [API do UrbVerde](https://github.com/UrbVerde/urbverde-api) (IAU-USP); quando houver dados por setor censitário, o mesmo esquema migra para PostGIS e pg_tileserv.
+
 ## Estrutura
 
 ```
 config/            municípios da base e catálogo de fontes
 docs/              arquitetura e fichas metodológicas dos indicadores
 scripts/           conferências contra a base 2023-2025
-src/observatorio/  pacote: armazenamento, cobertura, qualidade, coletores
+src/observatorio/  pacote: armazenamento, cobertura, qualidade, coletores, execução e site
 tests/             testes sem rede
 ```
 

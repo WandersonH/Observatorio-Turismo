@@ -1,0 +1,77 @@
+name: Site
+
+# Roda todas as fontes, gera o site e a API estática e publica no ramo gh-pages.
+# Só indicadores agregados por município vão para o gh-pages; as cargas brutas ficam no artefato.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "37 10 12 * *"   # mensal, dia 12
+
+permissions:
+  contents: write
+
+concurrency:
+  group: site
+  cancel-in-progress: false
+
+jobs:
+  site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      OBS_BQ_PROJECT: ${{ vars.OBS_BQ_PROJECT }}
+      TEM_GCP: ${{ secrets.GCP_SA_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install ".[bigquery]"
+
+      - name: Autenticar no Google Cloud (só se o segredo existir)
+        if: env.TEM_GCP == 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Rodar todas as fontes
+        run: |
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          observatorio rodar-tudo | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Conferir Siconfi contra a base 2023-2025
+        continue-on-error: true
+        run: python scripts/validar_siconfi.py | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Gerar site e API
+        run: observatorio site --saida _site
+
+      - name: Publicar no ramo gh-pages
+        env:
+          REPO: ${{ github.repository }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd _site
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Site gerado em $(date -u +%F) pela execução ${{ github.run_id }}"
+          git push -q --force "https://x-access-token:${TOKEN}@github.com/${REPO}.git" gh-pages
+          echo "Publicado em gh-pages: $(find . -name '*.json' -o -name '*.geojson' | wc -l) arquivos de API" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Guardar cargas e site como artefato
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-${{ github.run_id }}
+          path: |
+            data/
+            _site/
+          retention-days: 14
+          if-no-files-found: ignore

@@ -6,15 +6,14 @@ Todas as outras fontes se ligam ao município pelo código IBGE de 7 dígitos.
 from __future__ import annotations
 
 import logging
-import os
 from functools import lru_cache
-from pathlib import Path
 
 import pandas as pd
 import requests
 
 from .. import armazenamento
 from ..cobertura import Cobertura
+from ..config import pasta_config
 from ..normalizacao import chave_municipio
 from .base import Coletor, Resultado
 
@@ -29,18 +28,8 @@ SERIES_POPULACAO = [
 ]
 
 
-def _arquivo_base() -> Path:
-    """config/municipios_amitesp.csv: pela variável OBS_CONFIG, pela pasta atual ou pelo repositório."""
-    candidatos = [Path(os.environ["OBS_CONFIG"])] if os.environ.get("OBS_CONFIG") else []
-    candidatos += [Path.cwd() / "config", Path(__file__).resolve().parents[3] / "config"]
-    for pasta in candidatos:
-        if (pasta / "municipios_amitesp.csv").exists():
-            return pasta / "municipios_amitesp.csv"
-    raise FileNotFoundError("config/municipios_amitesp.csv não encontrado; defina OBS_CONFIG")
-
-
 def base_amitesp() -> pd.DataFrame:
-    base = pd.read_csv(_arquivo_base(), dtype={"id_formulario": "Int64"})
+    base = pd.read_csv(pasta_config() / "municipios_amitesp.csv", dtype={"id_formulario": "Int64"})
     base["chave"] = base["municipio"].map(chave_municipio)
     return base
 
