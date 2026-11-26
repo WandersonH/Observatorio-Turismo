@@ -149,8 +149,11 @@ class ColetorAlesp(Coletor):
         mapa = dict(zip(cadastro["municipio"].map(chave_municipio), cadastro["codigo_ibge"]))
         classificacao, cob_classificacao = self.classificacao(mapa)
         base = set(cadastro.loc[cadastro["na_base_amitesp"].astype(bool), "codigo_ibge"])
-        cob_classificacao.municipios_com_dado = len(set(classificacao["codigo_ibge"].dropna()) & base)
+        na_lei = set(classificacao["codigo_ibge"].dropna())
+        cob_classificacao.municipios_com_dado = len(na_lei & base)
         cob_classificacao.municipios_esperados = len(base)
+        fora = cadastro[cadastro["codigo_ibge"].isin(base - na_lei)]["municipio"].sort_values()
+        cob_classificacao.notas.append(f"da base AMITESP fora dos anexos da lei ({len(fora)}): {', '.join(fora)}")
 
         tratado = classificacao.dropna(subset=["codigo_ibge"])[
             ["codigo_ibge", "categoria_turistica", "posicao_ranking", "total_categoria", "fonte_legal"]]

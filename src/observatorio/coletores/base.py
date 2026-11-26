@@ -91,4 +91,6 @@ class Coletor(ABC):
         for cobertura in resultado.coberturas:
             registrar(cobertura, data_coleta=data_coleta)
             log.info("cobertura: %s", cobertura.resumo())
+            for nota in cobertura.notas:
+                log.info("    nota: %s", nota)
         return resultado
