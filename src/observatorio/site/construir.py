@@ -212,13 +212,15 @@ def construir(saida: str | Path = "_site") -> Path:
             if ind["fonte"] == "siconfi":
                 ind["nome"] += f" ({ano_siconfi})"
 
-    linhas = []
+    linhas, detalhes = [], []
     for cod, r in resumo.iterrows():
         linha = {"cod": cod, **{k: _limpo(v) for k, v in r.items()}}
         linhas.append(linha)
         detalhe = {**linha, "cadastur": {"periodo": periodo_cadastur, "categorias": categorias_por_mun.get(cod, [])},
                    "siconfi": series_siconfi.get(cod, [])}
+        detalhes.append(detalhe)
         _gravar(api / "municipios" / f"{cod}.json", detalhe)
+    _gravar(api / "municipios_detalhe.json", detalhes)  # todos de uma vez, para quem quer baixar tudo
 
     status = _status()
     meta = {
@@ -239,7 +241,7 @@ def construir(saida: str | Path = "_site") -> Path:
     if malha:
         _gravar(api / "malha_sp.geojson", malha)
     _gravar(api / "index.json", {
-        "rotas": ["meta.json", "municipios.json", "municipios/{codigo_ibge}.json", "indicadores.json",
+        "rotas": ["meta.json", "municipios.json", "municipios/{codigo_ibge}.json", "municipios_detalhe.json", "indicadores.json",
                   "status.json", "cobertura.json", "malha_sp.geojson"]})
 
     modelo = resources.files("observatorio.site").joinpath("modelo.html").read_text(encoding="utf-8")

@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Observatório de Turismo da AMITESP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --ouro:#B8962E;--ouro-escuro:#8A6D1B;--marrom:#4A2A26;--vermelho:#C8442F;--bege:#EFE6D2;
@@ -86,13 +88,13 @@ footer .in{max-width:1240px;margin:0 auto;padding:18px 24px;font-size:12px;color
 </head>
 <body>
 <header class="topo"><div class="in">
-  <a class="marca" href="#/"><span class="selo"></span><span><b>AMITESP</b><small>Observatório de Turismo</small></span></a>
+  <a class="marca" href="#mapa"><span class="selo"></span><span><b>AMITESP</b><small>Observatório de Turismo</small></span></a>
   <nav class="menu">
-    <a href="#/" data-r="">Mapa</a>
-    <a href="#/municipios" data-r="municipios">Municípios</a>
-    <a href="#/fontes" data-r="fontes">Fontes e cobertura</a>
-    <a href="#/api" data-r="api">API</a>
-    <a href="#/sobre" data-r="sobre">Sobre</a>
+    <a href="#mapa" data-r="">Mapa</a>
+    <a href="#municipios" data-r="municipios">Municípios</a>
+    <a href="#fontes" data-r="fontes">Fontes e cobertura</a>
+    <a href="#api" data-r="api">API</a>
+    <a href="#sobre" data-r="sobre">Sobre</a>
   </nav>
 </div></header>
 <main id="app"><p class="nota">Carregando dados…</p></main>
@@ -148,8 +150,10 @@ function fmtInd(id, v) {
 function pendentes() { return (E.status?.fontes || []).filter(f => f.situacao !== 'rodou'); }
 
 function rotear() {
-  const [rota, arg] = location.hash.replace(/^#\/?/, '').split('/');
-  document.querySelectorAll('nav.menu a').forEach(a => a.classList.toggle('ativo', a.dataset.r === (rota || '')));
+  // rotas em #nome simples (ex.: #fontes, #municipio-3550308); aceita também o formato antigo #/municipio/3550308
+  const h = location.hash.replace(/^#\/?/, '');
+  const [rota, arg] = h.startsWith('municipio-') ? ['municipio', h.slice(10)] : h.split('/');
+  document.querySelectorAll('nav.menu a').forEach(a => a.classList.toggle('ativo', a.dataset.r === (rota === 'mapa' ? '' : rota || '')));
   window.scrollTo(0, 0);
   if (rota === 'municipio' && arg) return paginaMunicipio(arg);
   if (rota === 'municipios') return paginaMunicipios();
@@ -231,11 +235,11 @@ function paginaInicio() {
         <button class="botao">Ver</button>
       </form>
       <datalist id="lista-municipios">${E.munis.map(m => `<option value="${esc(m.municipio)}">`).join('')}</datalist>
-      <div class="chips">${destaques.map(m => `<a class="chip" href="#/municipio/${m.cod}">${esc(m.municipio)}</a>`).join('')}</div>
+      <div class="chips">${destaques.map(m => `<a class="chip" href="#municipio-${m.cod}">${esc(m.municipio)}</a>`).join('')}</div>
       <div class="kpis">
         <div class="kpi"><div class="v">${nf(base.length)}</div><div class="r">municípios na base AMITESP</div><div class="n">de ${nf(E.munis.length)} em SP</div></div>
         <div class="kpi"><div class="v">${nf(cadastur)}</div><div class="r">prestadores no Cadastur em SP</div><div class="n">${esc(E.meta.periodo_cadastur || '')}</div></div>
-        <div class="kpi"><div class="v">${rodou}/${total}</div><div class="r">fontes coletadas</div><div class="n"><a href="#/fontes">ver o que falta</a></div></div>
+        <div class="kpi"><div class="v">${rodou}/${total}</div><div class="r">fontes coletadas</div><div class="n"><a href="#fontes">ver o que falta</a></div></div>
       </div>
     </div>
     <div class="cartao">
@@ -251,13 +255,13 @@ function paginaInicio() {
   <section class="cartao" style="margin-top:20px">
     <h2 id="titulo-ranking"></h2>
     <div id="ranking"></div>
-    <p class="nota"><a href="#/municipios">Ver todos os municípios</a></p>
+    <p class="nota"><a href="#municipios">Ver todos os municípios</a></p>
   </section>`;
   document.getElementById('form-busca').addEventListener('submit', ev => {
     ev.preventDefault();
     const nome = document.getElementById('campo-busca').value.trim().toLowerCase();
     const m = E.munis.find(x => x.municipio.toLowerCase() === nome) || E.munis.find(x => x.municipio.toLowerCase().startsWith(nome));
-    if (m) location.hash = '#/municipio/' + m.cod;
+    if (m) location.hash = '#municipio-' + m.cod;
   });
   document.getElementById('sel-ind').addEventListener('change', ev => { E.indAtual = ev.target.value; atualizarInicio(); });
   document.getElementById('so-base').addEventListener('change', ev => { E.soBase = ev.target.checked; atualizarInicio(); });
@@ -270,14 +274,14 @@ function atualizarInicio() {
   const limites = classes(universo.map(m => m[id]));
   const formatar = v => fmtInd(id, v);
   desenharMapa(document.getElementById('mapa'), {valor: m => m[id], soBase: E.soBase, limites, formatar, rotulo: ind.curto,
-    aoClicar: cod => location.hash = '#/municipio/' + cod});
+    aoClicar: cod => location.hash = '#municipio-' + cod});
   document.getElementById('legenda').innerHTML = legenda(limites, formatar);
   const fonte = (E.status?.fontes || []).find(f => f.id === ind.fonte);
   document.getElementById('fonte-ind').textContent = `Fonte: ${fonte?.nome || ind.fonte}. ${ind.n_base ?? 0} de ${E.meta.municipios_base} municípios da base com dado; mediana da base: ${formatar(ind.mediana_base)}.`;
   document.getElementById('titulo-ranking').textContent = `Base AMITESP: ${ind.nome}`;
   const lista = E.munis.filter(m => m.na_base_amitesp && m[id] != null).sort((a, b) => b[id] - a[id]).slice(0, 15);
   document.getElementById('ranking').innerHTML = `<table><thead><tr><th>#</th><th>Município</th><th>Região turística</th><th class="num">${esc(ind.curto)}</th></tr></thead>
-    <tbody>${lista.map((m, i) => `<tr><td>${i + 1}</td><td><a href="#/municipio/${m.cod}">${esc(m.municipio)}</a></td><td>${esc(m.regiao_turistica || '')}</td><td class="num">${formatar(m[id])}</td></tr>`).join('')}</tbody></table>`;
+    <tbody>${lista.map((m, i) => `<tr><td>${i + 1}</td><td><a href="#municipio-${m.cod}">${esc(m.municipio)}</a></td><td>${esc(m.regiao_turistica || '')}</td><td class="num">${formatar(m[id])}</td></tr>`).join('')}</tbody></table>`;
 }
 
 async function paginaMunicipio(cod) {
@@ -285,7 +289,12 @@ async function paginaMunicipio(cod) {
   if (!m0) { app.innerHTML = '<div class="aviso">Município não encontrado.</div>'; return; }
   app.innerHTML = '<p class="nota">Carregando…</p>';
   let m;
-  try { m = await obter(`municipios/${cod}.json`); } catch { m = m0; }
+  try { m = await obter(`municipios/${cod}.json`); }
+  catch {
+    // sem o arquivo por município, usa o pacote com todos (mesmo conteúdo)
+    try { E.detalhes ??= Object.fromEntries((await obter('municipios_detalhe.json')).map(d => [d.cod, d])); m = E.detalhes[cod] || m0; }
+    catch { m = m0; }
+  }
   const ultimo = (m.siconfi || []).filter(s => s.ano === E.meta.ano_siconfi)[0];
   const posBase = id => m[`pos_base_${id}`] ? `${nf(m['pos_base_' + id])}º de ${indicador(id).n_base} na base` : '';
   const kpi = (rotulo, valor, nota, vazio) => `<div class="kpi ${vazio ? 'vazio' : ''}"><div class="v">${valor}</div><div class="r">${rotulo}</div><div class="n">${nota || ''}</div></div>`;
@@ -300,7 +309,7 @@ async function paginaMunicipio(cod) {
   const comparar = E.ind.filter(i => i.id !== 'pop');
   const faltando = pendentes();
   app.innerHTML = `
-    <p class="nota"><a href="#/">Mapa</a> › ${esc(m.municipio)}</p>
+    <p class="nota"><a href="#mapa">Mapa</a> › ${esc(m.municipio)}</p>
     <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start" class="cab-mun">
       <div>
         <h1>${esc(m.municipio)}</h1>
@@ -339,11 +348,11 @@ async function paginaMunicipio(cod) {
     <section class="cartao" style="margin-top:16px">
       <h3>Ainda não coletado</h3>
       <div class="pendentes">${faltando.map(f => `<span title="${esc(SITUACAO[f.situacao])}">${esc(f.nome || f.id)} · ${esc(SITUACAO[f.situacao])}</span>`).join('') || '<span>Todas as fontes rodaram.</span>'}</div>
-      <p class="nota">Detalhes em <a href="#/fontes">Fontes e cobertura</a>.</p>
+      <p class="nota">Detalhes em <a href="#fontes">Fontes e cobertura</a>.</p>
     </section>`;
   const formatar = v => fmtInd('hosp_10k', v);
   desenharMapa(document.getElementById('mapa-mun'), {valor: x => x.na_base_amitesp ? 1 : null, destaque: cod, limites: [0, 0, 0, 0],
-    formatar: v => v ? 'base AMITESP' : 'fora da base', rotulo: 'Situação', aoClicar: c => location.hash = '#/municipio/' + c});
+    formatar: v => v ? 'base AMITESP' : 'fora da base', rotulo: 'Situação', aoClicar: c => location.hash = '#municipio-' + c});
 }
 
 function paginaMunicipios() {
@@ -361,7 +370,7 @@ function paginaMunicipios() {
       .sort((a, b) => { const x = a[ordem], y = b[ordem]; if (x == null) return 1; if (y == null) return -1; return (typeof x === 'string' ? x.localeCompare(y) : x - y) * (desc ? -1 : 1); });
     const fmt = (c, v) => ['municipio', 'regiao_turistica'].includes(c) ? esc(v || '') : c === 'tur_pc' ? (v == null ? '–' : 'R$ ' + nf(v, 2)) : c === 'hosp_10k' ? nf(v, 1) : nf(v);
     document.getElementById('tab-mun').innerHTML = `<thead><tr>${colunas.map(([c, r]) => `<th data-c="${c}" class="${['municipio', 'regiao_turistica'].includes(c) ? '' : 'num'}">${r}${ordem === c ? (desc ? ' ▼' : ' ▲') : ''}</th>`).join('')}</tr></thead>
-      <tbody>${lista.map(m => `<tr>${colunas.map(([c]) => c === 'municipio' ? `<td><a href="#/municipio/${m.cod}">${esc(m.municipio)}</a></td>` : `<td class="${c === 'regiao_turistica' ? '' : 'num'}">${fmt(c, m[c])}</td>`).join('')}</tr>`).join('')}</tbody>`;
+      <tbody>${lista.map(m => `<tr>${colunas.map(([c]) => c === 'municipio' ? `<td><a href="#municipio-${m.cod}">${esc(m.municipio)}</a></td>` : `<td class="${c === 'regiao_turistica' ? '' : 'num'}">${fmt(c, m[c])}</td>`).join('')}</tr>`).join('')}</tbody>`;
     document.querySelectorAll('#tab-mun th').forEach(th => th.addEventListener('click', () => { desc = ordem === th.dataset.c ? !desc : th.dataset.c !== 'municipio'; ordem = th.dataset.c; desenhar(); }));
   };
   document.getElementById('filtro').addEventListener('input', desenhar);
@@ -395,6 +404,7 @@ function paginaAPI() {
     ['meta.json', 'Data da última coleta, período do Cadastur, ano do Siconfi, contagens.'],
     ['municipios.json', 'Os 645 municípios de SP com os indicadores-resumo e posições.'],
     [`municipios/${exemplo}.json`, 'Um município: resumo, categorias do Cadastur e série do Siconfi.'],
+    ['municipios_detalhe.json', 'Todos os municípios com o detalhe acima, num arquivo só.'],
     ['indicadores.json', 'Definição de cada indicador, unidade, fonte e medianas.'],
     ['status.json', 'O que rodou, falhou ou ainda não existe em cada fonte.'],
     ['cobertura.json', 'Universo e amostra de cada tabela da última coleta.'],
