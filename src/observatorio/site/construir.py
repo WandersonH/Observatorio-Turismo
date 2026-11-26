@@ -59,7 +59,7 @@ INDICADORES = [
     {"id": "noticias", "nome": "Notícias sobre turismo no município nos últimos 30 dias", "curto": "Notícias 30 dias",
      "unidade": "notícias (teto de 100)", "fonte": "producoes", "casas": 0},
     {"id": "academicos", "nome": "Trabalhos acadêmicos que citam o município e turismo", "curto": "Trabalhos acadêmicos",
-     "unidade": "trabalhos (OpenAlex)", "fonte": "producoes", "casas": 0},
+     "unidade": "trabalhos (OpenAlex)", "fonte": "producoes", "casas": 0, "mapa": False},
     {"id": "alesp_proposituras", "nome": "Proposituras da Alesp sobre turismo que citam o município",
      "curto": "Proposituras Alesp", "unidade": "proposituras", "fonte": "alesp", "casas": 0},
     {"id": "google_fora", "nome": "Hospedagens visíveis no Google e ausentes do Cadastur", "curto": "Hospedagem fora do Cadastur",

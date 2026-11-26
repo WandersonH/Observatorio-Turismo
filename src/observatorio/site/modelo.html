@@ -225,7 +225,7 @@ function legenda(limites, formatar) {
 
 /* ---------- páginas ---------- */
 function opcoesIndicador() {
-  return E.ind.map(i => `<option value="${i.id}" ${i.id === E.indAtual ? 'selected' : ''}>${esc(i.nome)}</option>`).join('');
+  return E.ind.filter(i => i.mapa !== false).map(i => `<option value="${i.id}" ${i.id === E.indAtual ? 'selected' : ''}>${esc(i.nome)}</option>`).join('');
 }
 
 function paginaInicio() {

@@ -2,8 +2,8 @@
 
 - Google Notícias: feed RSS da busca `"<município>" turismo SP`, últimos 30 dias. O feed devolve
   no máximo 100 itens; a contagem é um piso, não um total.
-- OpenAlex: trabalhos acadêmicos com o nome do município e "turismo" ou "tourism" no título,
-  resumo ou texto. Sem chave, a OpenAlex dá um orçamento diário pequeno por IP; com o segredo
+- OpenAlex: trabalhos acadêmicos com o nome do município e "turismo" ou "tourism" no título
+  ou no resumo. Sem chave, a OpenAlex dá um orçamento diário pequeno por IP; com o segredo
   OPENALEX_API_KEY o limite sobe. Municípios não consultados ficam marcados, não zerados.
 
 Limite: nomes que também são palavras ou acidentes geográficos (Bocaina, Socorro, Brotas)
@@ -63,8 +63,9 @@ class ColetorProducoes(Coletor):
         return itens_rss(r.text)
 
     def academicos(self, municipio: str, chave: str | None) -> tuple[int | None, list[dict], str | None]:
-        params = {"search": f'"{municipio}" AND (turismo OR tourism)', "per-page": 10,
-                  "sort": "publication_date:desc", "mailto": "observatorio.turismo@usp.br"}
+        # Só título e resumo: a busca no texto completo traz homônimos (Serra da Bocaina, Socorro)
+        params = {"filter": f'title_and_abstract.search:"{municipio}" AND (turismo OR tourism OR turistico)',
+                  "per-page": 10, "sort": "publication_date:desc", "mailto": "observatorio.turismo@usp.br"}
         if chave:
             params["api_key"] = chave
         r = self.sessao.get(OPENALEX, params=params, timeout=60)
