@@ -7,7 +7,7 @@ on:
         description: Fonte a coletar
         required: true
         type: choice
-        options: [cadastur, siconfi, ibge]
+        options: [cadastur, siconfi, ibge, caged, anac, antt, cetesb, alesp, planos_diretores, producoes, google_places]
       anos:
         description: "Exercícios, separados por espaço (só Siconfi; vazio = três últimos)"
         required: false
@@ -31,6 +31,8 @@ jobs:
     env:
       OBS_BQ_PROJECT: ${{ vars.OBS_BQ_PROJECT }}
       TEM_GCP: ${{ secrets.GCP_SA_KEY != '' }}
+      GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+      OPENALEX_API_KEY: ${{ secrets.OPENALEX_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -39,7 +41,7 @@ jobs:
           python-version: "3.12"
           cache: pip
 
-      - run: pip install ".[bigquery]"
+      - run: pip install ".[bigquery,pdf]"
 
       - name: Autenticar no Google Cloud (só se o segredo existir)
         if: env.TEM_GCP == 'true'

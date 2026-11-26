@@ -15,6 +15,7 @@ from dataclasses import asdict
 from . import armazenamento
 from .config import catalogo_fontes
 from .coletores import COLETORES
+from .coletores.base import FaltaCredencial
 from .coletores.siconfi import anos_padrao
 
 log = logging.getLogger(__name__)
@@ -23,6 +24,7 @@ RODOU = "rodou"
 FALHOU = "falhou"
 NAO_IMPLEMENTADO = "nao_implementado"
 AGUARDA_DECISAO = "aguarda_decisao"
+FALTA_CREDENCIAL = "falta_credencial"
 
 # Parâmetros da rodada completa: a base AMITESP com série de três anos no Siconfi,
 # e os demais 544 municípios de SP só no último ano, como grupo de comparação.
@@ -51,6 +53,10 @@ def rodar_tudo() -> dict:
             resultado = COLETORES[fonte_id]().executar(**parametros)
             info["situacao"] = RODOU
             info["coberturas"] = [{**asdict(c), "taxa": c.taxa} for c in resultado.coberturas]
+        except FaltaCredencial as erro:
+            log.warning("%s: %s", fonte_id, erro)
+            info["situacao"] = FALTA_CREDENCIAL
+            info["erro"] = str(erro)
         except Exception as erro:
             log.exception("falha em %s", fonte_id)
             info["situacao"] = FALHOU
@@ -68,11 +74,12 @@ def rodar_tudo() -> dict:
 
 
 def resumo(status: dict) -> str:
-    rotulos = {RODOU: "rodou", FALHOU: "FALHOU", NAO_IMPLEMENTADO: "não implementado", AGUARDA_DECISAO: "aguarda decisão"}
+    rotulos = {RODOU: "rodou", FALHOU: "FALHOU", NAO_IMPLEMENTADO: "não implementado", AGUARDA_DECISAO: "aguarda decisão",
+               FALTA_CREDENCIAL: "falta credencial"}
     linhas = [f"Rodada de {status['data_coleta']}", ""]
     for f in status["fontes"]:
         linha = f"- {f['id']}: {rotulos[f['situacao']]}"
-        if f["situacao"] == FALHOU:
+        if f["situacao"] in (FALHOU, FALTA_CREDENCIAL):
             linha += f" ({f['erro']})"
         for c in f.get("coberturas", []):
             taxa = f" ({c['taxa']:.1%})" if c.get("taxa") is not None else ""

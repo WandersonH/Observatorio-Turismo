@@ -28,16 +28,16 @@ fontes:
 
   - id: caged
     nome: Novo CAGED - emprego nas atividades características do turismo
-    status: planejado
+    status: implementado
     frequencia: mensal
     eixo: empregos
     rits: economico
-    observacao: usar a lista oficial de 59 subclasses CNAE (MTur/IBGE/IPEA, RIET 2008)
+    observacao: 88 subclasses CNAE em 10 grupos (universo do SIMT/IPEA, config/act_cnae.csv); recorte do índice a definir
     repositorio: publico
 
   - id: anac
     nome: ANAC - chegadas de passageiros em aeroportos
-    status: planejado
+    status: implementado
     frequencia: mensal
     eixo: mobilidade
     rits: economico
@@ -45,30 +45,31 @@ fontes:
 
   - id: antt
     nome: ANTT - ônibus de fretamento eventual e turístico
-    status: planejado
+    status: implementado
     frequencia: mensal
     eixo: mobilidade
     rits: economico
     repositorio: publico
 
   - id: cetesb
-    nome: CETESB - resíduos, aterros e qualidade das águas
-    status: planejado
+    nome: CETESB - resíduos e qualidade dos aterros (IQR)
+    status: implementado
     frequencia: anual
     eixo: sustentabilidade
     rits: ambiental
+    observacao: lê o repositório público da CETESB (o site bloqueia robôs); qualidade das águas ainda não entra
     repositorio: publico
 
   - id: alesp
     nome: Alesp - proposituras sobre turismo e leis de classificação de MIT
-    status: planejado
+    status: implementado
     frequencia: mensal
     eixo: governanca
     repositorio: publico
 
   - id: planos_diretores
-    nome: Planos diretores de turismo, atas do COMTUR e inventários (Alesp, diários oficiais, prefeituras)
-    status: planejado
+    nome: Planos diretores de turismo, COMTUR e inventários nos diários oficiais (Querido Diário)
+    status: implementado
     frequencia: trimestral
     eixo: governanca
     rits: governanca
@@ -76,18 +77,19 @@ fontes:
 
   - id: producoes
     nome: Notícias e produção acadêmica por município (Google News, OpenAlex)
-    status: planejado
+    status: implementado
     frequencia: mensal
     eixo: producoes
     repositorio: publico
 
   - id: google_places
     nome: Google Places API - pareamento com o Cadastur, nota e número de avaliações
-    status: planejado
+    status: implementado
     frequencia: trimestral
     eixo: [hospedagem, atrativos]
     repositorio: publico
-    observacao: só o place_id pode ser guardado sem prazo; o restante é reconsultado a cada ciclo
+    credencial: GOOGLE_PLACES_API_KEY
+    observacao: só o place_id é guardado; nota e avaliações são reconsultadas a cada ciclo e publicadas agregadas
 
   - id: tripadvisor
     nome: TripAdvisor Content API - inventário de atrativos

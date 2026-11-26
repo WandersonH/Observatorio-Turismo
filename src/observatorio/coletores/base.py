@@ -22,6 +22,14 @@ log = logging.getLogger(__name__)
 USER_AGENT = "ObservatorioTurismoAMITESP/0.1 (pesquisa academica EACH-USP)"
 
 
+class FaltaCredencial(RuntimeError):
+    """A fonte precisa de uma chave (segredo do repositório) que não foi configurada."""
+
+    def __init__(self, variavel: str, onde: str = "Settings → Secrets and variables → Actions"):
+        super().__init__(f"falta o segredo {variavel} ({onde})")
+        self.variavel = variavel
+
+
 @dataclass
 class Resultado:
     tabelas: dict[str, pd.DataFrame] = field(default_factory=dict)  # camada bruta: como a fonte entrega
