@@ -25,6 +25,7 @@ FALHOU = "falhou"
 NAO_IMPLEMENTADO = "nao_implementado"
 AGUARDA_DECISAO = "aguarda_decisao"
 FALTA_CREDENCIAL = "falta_credencial"
+NAO_EXECUTADO = "nao_executado"
 
 # Parâmetros da rodada completa: a base AMITESP com série de três anos no Siconfi,
 # e os demais 544 municípios de SP só no último ano, como grupo de comparação.
@@ -34,18 +35,31 @@ PARAMETROS = {
 ORDEM = ["ibge"]  # o cadastro mestre vem antes de tudo
 
 
-def rodar_tudo() -> dict:
+def situacao_sem_execucao(info: dict) -> str:
+    if info["id"] in COLETORES:
+        return NAO_EXECUTADO
+    return AGUARDA_DECISAO if info.get("status") == "depende_de_decisao" else NAO_IMPLEMENTADO
+
+
+def rodar_tudo(fontes: list[str] | None = None) -> dict:
+    """Roda as fontes pedidas (ou todas). Com `fontes`, o status vai para status-<fontes>.json,
+    para várias execuções em paralelo poderem ser juntadas depois (ver `consolidar_status`)."""
     catalogo = catalogo_fontes()
     data_coleta = armazenamento.hoje()
     ids = ORDEM + [f["id"] for f in catalogo if f["id"] not in ORDEM]
+    if fontes:
+        desconhecidas = set(fontes) - set(ids)
+        if desconhecidas:
+            raise ValueError(f"fontes desconhecidas: {sorted(desconhecidas)}")
+        ids = [i for i in ids if i in fontes]
     por_id = {f["id"]: f for f in catalogo}
 
-    fontes = []
+    resultado_fontes = []
     for fonte_id in ids:
         info = dict(por_id.get(fonte_id, {"id": fonte_id}))
         if fonte_id not in COLETORES:
-            info["situacao"] = AGUARDA_DECISAO if info.get("status") == "depende_de_decisao" else NAO_IMPLEMENTADO
-            fontes.append(info)
+            info["situacao"] = situacao_sem_execucao(info)
+            resultado_fontes.append(info)
             continue
         inicio = time.monotonic()
         try:
@@ -64,18 +78,35 @@ def rodar_tudo() -> dict:
             info["detalhe"] = traceback.format_exc(limit=3)[-1500:]
         info["duracao_s"] = round(time.monotonic() - inicio, 1)
         info["data_coleta"] = data_coleta
-        fontes.append(info)
+        resultado_fontes.append(info)
 
-    status = {"data_coleta": data_coleta, "fontes": fontes}
+    status = {"data_coleta": data_coleta, "fontes": resultado_fontes}
     pasta = armazenamento.RAIZ_DADOS / "status"
     pasta.mkdir(parents=True, exist_ok=True)
-    (pasta / "status.json").write_text(json.dumps(status, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    nome = f"status-{'-'.join(fontes)}.json" if fontes else "status.json"
+    (pasta / nome).write_text(json.dumps(status, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
     return status
+
+
+def consolidar_status() -> dict:
+    """Junta os status*.json das execuções (uma completa ou várias em paralelo) na ordem do catálogo."""
+    pasta = armazenamento.RAIZ_DADOS / "status"
+    executadas, datas = {}, []
+    for arquivo in sorted(pasta.glob("status*.json")) if pasta.exists() else []:
+        conteudo = json.loads(arquivo.read_text(encoding="utf-8"))
+        datas.append(conteudo.get("data_coleta"))
+        for f in conteudo.get("fontes", []):
+            if f["id"] not in executadas or f.get("situacao") in (RODOU, FALHOU, FALTA_CREDENCIAL):
+                executadas[f["id"]] = f
+    fontes = []
+    for info in catalogo_fontes():
+        fontes.append(executadas.get(info["id"]) or {**info, "situacao": situacao_sem_execucao(info)})
+    return {"data_coleta": max((d for d in datas if d), default=None), "fontes": fontes}
 
 
 def resumo(status: dict) -> str:
     rotulos = {RODOU: "rodou", FALHOU: "FALHOU", NAO_IMPLEMENTADO: "não implementado", AGUARDA_DECISAO: "aguarda decisão",
-               FALTA_CREDENCIAL: "falta credencial"}
+               FALTA_CREDENCIAL: "falta credencial", NAO_EXECUTADO: "não executado"}
     linhas = [f"Rodada de {status['data_coleta']}", ""]
     for f in status["fontes"]:
         linha = f"- {f['id']}: {rotulos[f['situacao']]}"

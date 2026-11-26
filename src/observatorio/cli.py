@@ -20,7 +20,8 @@ def main(argv: list[str] | None = None) -> int:
     coletar.add_argument("--incluir-guias", action="store_true", help="Cadastur: inclui guias (pessoas físicas)")
 
     sub.add_parser("fontes", help="lista os coletores disponíveis")
-    sub.add_parser("rodar-tudo", help="roda todos os coletores e registra o que rodou, falhou ou não existe")
+    rodar = sub.add_parser("rodar-tudo", help="roda os coletores e registra o que rodou, falhou ou não existe")
+    rodar.add_argument("--fontes", nargs="*", help="só estas fontes (para rodar em paralelo)")
     site = sub.add_parser("site", help="gera o site e a API estática a partir das cargas tratadas")
     site.add_argument("--saida", default="_site")
 
@@ -36,7 +37,7 @@ def main(argv: list[str] | None = None) -> int:
         from .execucao import resumo, rodar_tudo
 
         # Falhas ficam registradas no status.json; o comando não aborta para o site sair mesmo assim
-        print(resumo(rodar_tudo()))
+        print(resumo(rodar_tudo(args.fontes or None)))
         return 0
 
     if args.comando == "site":

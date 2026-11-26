@@ -21,7 +21,6 @@ import pandas as pd
 import requests
 
 from .. import armazenamento
-from ..config import catalogo_fontes
 from ..normalizacao import chave_municipio
 
 log = logging.getLogger(__name__)
@@ -241,10 +240,9 @@ def _coberturas() -> list[dict]:
 
 
 def _status() -> dict:
-    arquivo = armazenamento.RAIZ_DADOS / "status" / "status.json"
-    if arquivo.exists():
-        return json.loads(arquivo.read_text(encoding="utf-8"))
-    return {"data_coleta": None, "fontes": [{**f, "situacao": "nao_executado"} for f in catalogo_fontes()]}
+    from ..execucao import consolidar_status  # import tardio: evita ciclo com os coletores
+
+    return consolidar_status()
 
 
 def construir(saida: str | Path = "_site") -> Path:

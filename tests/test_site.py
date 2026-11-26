@@ -114,7 +114,9 @@ def test_site_publica_indicadores_e_nao_declarado(dados, monkeypatch):
     meta = json.loads((api / "meta.json").read_text())
     assert meta["municipios_base"] == 2 and meta["ano_siconfi"] == 2025
     status = json.loads((api / "status.json").read_text())
-    assert all(f["situacao"] == "nao_executado" for f in status["fontes"])
+    situacao = {f["id"]: f["situacao"] for f in status["fontes"]}
+    assert situacao["cadastur"] == "nao_executado" and situacao["tripadvisor"] == "nao_implementado"
+    assert situacao["precos_hospedagem"] == "aguarda_decisao"
     assert (saida / "index.html").read_text().startswith("<!DOCTYPE html>")
     # nenhum dado de estabelecimento vai para o site
     assert not any("cnpj" in p.read_text().lower() for p in api.rglob("*.json"))
@@ -149,3 +151,17 @@ def test_site_com_fontes_novas(dados, monkeypatch):
     assert meta["caged_periodo"] == "2026-08 a 2026-09" and meta["cetesb_ano"] == 2021
     nomes = {i["id"]: i["nome"] for i in json.loads((api / "indicadores.json").read_text())}
     assert "(2021)" in nomes["iqr"] and "2026-08 a 2026-09" in nomes["emp_saldo"]
+
+
+def test_status_de_execucoes_paralelas_se_junta(dados, monkeypatch):
+    catalogo = [{"id": "falsa", "nome": "Falsa"}, {"id": "quebrada", "nome": "Quebrada"}, {"id": "futura", "nome": "F"}]
+    monkeypatch.setattr(execucao, "catalogo_fontes", lambda: catalogo)
+    monkeypatch.setattr(execucao, "COLETORES", {"falsa": Falso, "quebrada": Quebrado})
+    monkeypatch.setattr(execucao, "ORDEM", [])
+    execucao.rodar_tudo(["falsa"])
+    execucao.rodar_tudo(["quebrada"])
+    pasta = armazenamento.RAIZ_DADOS / "status"
+    assert sorted(a.name for a in pasta.glob("*.json")) == ["status-falsa.json", "status-quebrada.json"]
+    junto = execucao.consolidar_status()
+    assert [(f["id"], f["situacao"]) for f in junto["fontes"]] == [
+        ("falsa", "rodou"), ("quebrada", "falhou"), ("futura", "nao_implementado")]
