@@ -150,3 +150,30 @@ def test_alesp_classificacao_ignora_trechos_revogados():
         {"categoria_turistica": "Estância Turística", "posicao_ranking": 1, "municipio_lei": "Itanhaém"},
         {"categoria_turistica": "Estância Turística", "posicao_ranking": 2, "municipio_lei": "Guararema"},
         {"categoria_turistica": "Município de Interesse Turístico", "posicao_ranking": 1, "municipio_lei": "Araçatuba"}]
+
+
+def test_get_tenta_de_novo_em_erro_passageiro(monkeypatch):
+    import time as _time
+
+    from observatorio.coletores.base import Coletor
+
+    class Resp:
+        def __init__(self, status):
+            self.status_code = status
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                raise RuntimeError(self.status_code)
+
+    respostas = iter([Resp(522), Resp(200)])
+
+    class Teste(Coletor):
+        fonte = "teste"
+
+        def coletar(self, **_):
+            return None
+
+    c = Teste()
+    monkeypatch.setattr(c.sessao, "get", lambda *a, **k: next(respostas))
+    monkeypatch.setattr(_time, "sleep", lambda s: None)
+    assert c.get("https://exemplo").status_code == 200

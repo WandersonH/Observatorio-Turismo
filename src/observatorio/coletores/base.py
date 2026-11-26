@@ -46,11 +46,28 @@ class Coletor(ABC):
         self.sessao = requests.Session()
         self.sessao.headers["User-Agent"] = USER_AGENT
 
-    def get(self, url: str, **kwargs) -> requests.Response:
+    TRANSITORIOS = {429, 500, 502, 503, 504, 520, 521, 522, 523, 524}
+
+    def get(self, url: str, tentativas: int = 4, **kwargs) -> requests.Response:
+        """GET que espera e tenta de novo em erros passageiros (servidor sobrecarregado, conexão caída)."""
+        import time
+
         kwargs.setdefault("timeout", 60)
-        resposta = self.sessao.get(url, **kwargs)
-        resposta.raise_for_status()
-        return resposta
+        for tentativa in range(tentativas):
+            ultima = tentativa == tentativas - 1
+            try:
+                resposta = self.sessao.get(url, **kwargs)
+            except (requests.ConnectionError, requests.Timeout) as erro:
+                if ultima:
+                    raise
+                log.warning("%s em %s; nova tentativa", type(erro).__name__, url)
+            else:
+                if resposta.status_code not in self.TRANSITORIOS or ultima:
+                    resposta.raise_for_status()
+                    return resposta
+                log.warning("HTTP %s em %s; nova tentativa", resposta.status_code, url)
+            time.sleep(15 * (tentativa + 1))
+        raise RuntimeError("inalcançável")
 
     def baixar_arquivo(self, url: str, destino, tentativas: int = 6) -> int:
         """Baixa um arquivo grande para o disco, retomando do ponto em que a conexão caiu (Range)."""
